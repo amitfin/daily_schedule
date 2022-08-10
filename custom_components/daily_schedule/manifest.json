@@ -1,0 +1,11 @@
+{
+  "domain": "daily_schedule",
+  "integration_type": "helper",
+  "name": "Daily Schedule",
+  "version": "1.0.0",
+  "documentation": "https://github.com/amitfin/daily_schedule",
+  "issue_tracker": "https://github.com/amitfin/daily_schedule/issues",
+  "codeowners": ["@amitfin"],
+  "iot_class": "calculated",
+  "config_flow": true
+}
