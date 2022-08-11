@@ -1,5 +1,4 @@
 {
-    "title": "Daily Schedule",
     "config": {
         "error": {
             "invalid_schedule": "Invalid time periods in schedule. Enter the last period again."
