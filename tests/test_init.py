@@ -1,56 +1,53 @@
-"""Test integration_blueprint setup process."""
-from homeassistant.exceptions import ConfigEntryNotReady
-import pytest
+"""The tests for the daily schedule integration."""
+from homeassistant.const import Platform
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
+
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.integration_blueprint import (
-    BlueprintDataUpdateCoordinator,
-    async_reload_entry,
-    async_setup_entry,
-    async_unload_entry,
+from custom_components.daily_schedule.const import (
+    ATTR_END,
+    ATTR_SCHEDULE,
+    ATTR_START,
+    DOMAIN,
 )
-from custom_components.integration_blueprint.const import DOMAIN
-
-from .const import MOCK_CONFIG
 
 
-# We can pass fixtures as defined in conftest.py to tell pytest to use the fixture
-# for a given test. We can also leverage fixtures and mocks that are available in
-# Home Assistant using the pytest_homeassistant_custom_component plugin.
-# Assertions allow you to verify that the return value of whatever is on the left
-# side of the assertion matches with the right side.
-async def test_setup_unload_and_reload_entry(hass, bypass_get_data):
-    """Test entry setup and unload."""
-    # Create a mock entry so we don't have to go through config flow
-    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+async def test_setup_change_remove_config_entry(hass: HomeAssistant) -> None:
+    """Test setting up and removing a config entry."""
+    entity_id = f"{Platform.BINARY_SENSOR}.my_test"
+    config_entry = MockConfigEntry(domain=DOMAIN, title="My Test", unique_id="1234")
 
-    # Set up the entry and assert that the values set during setup are where we expect
-    # them to be. Because we have patched the BlueprintDataUpdateCoordinator.async_get_data
-    # call, no code from custom_components/integration_blueprint/api.py actually runs.
-    assert await async_setup_entry(hass, config_entry)
-    assert DOMAIN in hass.data and config_entry.entry_id in hass.data[DOMAIN]
-    assert (
-        type(hass.data[DOMAIN][config_entry.entry_id]) == BlueprintDataUpdateCoordinator
+    # Add the config entry.
+    config_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    # Check the state and entity registry entry.
+    registry = er.async_get(hass)
+    assert registry.async_get(entity_id) is not None
+    state = hass.states.get(entity_id)
+    assert state.state == "off"
+    assert state.attributes[ATTR_SCHEDULE] == []
+
+    # Update the config entry.
+    hass.config_entries.async_update_entry(
+        config_entry,
+        options={ATTR_SCHEDULE: [{ATTR_START: "00:00:00", ATTR_END: "00:00:00"}]},
     )
+    await hass.async_block_till_done()
 
-    # Reload the entry and assert that the data from above is still there
-    assert await async_reload_entry(hass, config_entry) is None
-    assert DOMAIN in hass.data and config_entry.entry_id in hass.data[DOMAIN]
-    assert (
-        type(hass.data[DOMAIN][config_entry.entry_id]) == BlueprintDataUpdateCoordinator
-    )
+    # Check the updated entity.
+    state = hass.states.get(entity_id)
+    assert state.state == "on"
+    assert state.attributes[ATTR_SCHEDULE] == [
+        {ATTR_START: "00:00:00", ATTR_END: "00:00:00"},
+    ]
 
-    # Unload the entry and verify that the data has been removed
-    assert await async_unload_entry(hass, config_entry)
-    assert config_entry.entry_id not in hass.data[DOMAIN]
+    # Remove the config entry.
+    assert await hass.config_entries.async_remove(config_entry.entry_id)
+    await hass.async_block_till_done()
 
-
-async def test_setup_entry_exception(hass, error_on_get_data):
-    """Test ConfigEntryNotReady when API raises an exception during entry setup."""
-    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
-
-    # In this case we are testing the condition where async_setup_entry raises
-    # ConfigEntryNotReady using the `error_on_get_data` fixture which simulates
-    # an error.
-    with pytest.raises(ConfigEntryNotReady):
-        assert await async_setup_entry(hass, config_entry)
+    # Check the state and entity registry entry are removed.
+    assert hass.states.get(entity_id) is None
+    assert registry.async_get(entity_id) is None

@@ -1,110 +1,151 @@
-"""Test integration_blueprint config flow."""
-from unittest.mock import patch
+"""Tests for the Daily Schedule config flow."""
+from homeassistant.config_entries import SOURCE_USER
+from homeassistant.const import CONF_NAME
+from homeassistant.core import HomeAssistant
+from homeassistant.data_entry_flow import FlowResultType
 
-from homeassistant import config_entries, data_entry_flow
-import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.integration_blueprint.const import (
-    BINARY_SENSOR,
+from custom_components.daily_schedule.config_flow import (
+    ADD_PERIOD,
+    PERIOD_DELIMITER,
+)
+from custom_components.daily_schedule.const import (
+    ATTR_END,
+    ATTR_SCHEDULE,
+    ATTR_START,
     DOMAIN,
-    PLATFORMS,
-    SENSOR,
-    SWITCH,
 )
 
-from .const import MOCK_CONFIG
 
-
-# This fixture bypasses the actual setup of the integration
-# since we only want to test the config flow. We test the
-# actual functionality of the integration in other test modules.
-@pytest.fixture(autouse=True)
-def bypass_setup_fixture():
-    """Prevent setup."""
-    with patch(
-        "custom_components.integration_blueprint.async_setup",
-        return_value=True,
-    ), patch(
-        "custom_components.integration_blueprint.async_setup_entry",
-        return_value=True,
-    ):
-        yield
-
-
-# Here we simiulate a successful config flow from the backend.
-# Note that we use the `bypass_get_data` fixture here because
-# we want the config flow validation to succeed during the test.
-async def test_successful_config_flow(hass, bypass_get_data):
-    """Test a successful config flow."""
-    # Initialize a config flow
+async def test_config_flow_no_schedule(hass: HomeAssistant) -> None:
+    """Test the user flow without a schedule."""
     result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": config_entries.SOURCE_USER}
+        DOMAIN,
+        context={"source": SOURCE_USER},
     )
 
-    # Check that the config flow shows the user form as the first step
-    assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
-    assert result["step_id"] == "user"
+    assert result.get("type") == FlowResultType.FORM
+    assert result.get("step_id") == SOURCE_USER
+    assert "flow_id" in result
 
-    # If a user were to enter `test_username` for username and `test_password`
-    # for password, it would result in this function call
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], user_input=MOCK_CONFIG
-    )
-
-    # Check that the config flow is complete and a new entry is created with
-    # the input data
-    assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
-    assert result["title"] == "test_username"
-    assert result["data"] == MOCK_CONFIG
-    assert result["result"]
-
-
-# In this case, we want to simulate a failure during the config flow.
-# We use the `error_on_get_data` mock instead of `bypass_get_data`
-# (note the function parameters) to raise an Exception during
-# validation of the input config.
-async def test_failed_config_flow(hass, error_on_get_data):
-    """Test a failed config flow due to credential validation failure."""
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": config_entries.SOURCE_USER}
-    )
-
-    assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
-    assert result["step_id"] == "user"
-
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], user_input=MOCK_CONFIG
-    )
-
-    assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
-    assert result["errors"] == {"base": "auth"}
-
-
-# Our config flow also has an options flow, so we must test it as well.
-async def test_options_flow(hass):
-    """Test an options flow."""
-    # Create a new MockConfigEntry and add to HASS (we're bypassing config
-    # flow entirely)
-    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
-    entry.add_to_hass(hass)
-
-    # Initialize an options flow
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-
-    # Verify that the first options step is a user form
-    assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
-    assert result["step_id"] == "user"
-
-    # Enter some fake data into the form
-    result = await hass.config_entries.options.async_configure(
+    result2 = await hass.config_entries.flow.async_configure(
         result["flow_id"],
-        user_input={platform: platform != SENSOR for platform in PLATFORMS},
+        user_input={CONF_NAME: "test", ADD_PERIOD: False},
     )
 
-    # Verify that the flow finishes
-    assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
-    assert result["title"] == "test_username"
+    assert result2.get("type") == FlowResultType.CREATE_ENTRY
+    assert result2.get("title") == "test"
+    assert result2.get("options") == {ATTR_SCHEDULE: []}
 
-    # Verify that the options were updated
-    assert entry.options == {BINARY_SENSOR: True, SENSOR: False, SWITCH: True}
+
+async def test_config_flow_with_schedule(hass: HomeAssistant) -> None:
+    """Test the user flow with a schedule."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": SOURCE_USER},
+    )
+
+    result2 = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={CONF_NAME: "test"},  # Default is to add a time period
+    )
+    assert result2.get("type") == FlowResultType.FORM
+    assert result2.get("step_id") == "period"
+
+    result3 = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={ATTR_START: "15:00:00", ATTR_END: "20:00:00", ADD_PERIOD: True},
+    )
+    assert result3.get("type") == FlowResultType.FORM
+    assert result3.get("step_id") == "period"
+
+    result4 = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={ATTR_START: "05:00:00", ATTR_END: "10:00:00"},
+    )
+    assert result4.get("type") == FlowResultType.CREATE_ENTRY
+    assert result4.get("title") == "test"
+    assert result4.get("options") == {
+        ATTR_SCHEDULE: [
+            {ATTR_START: "05:00:00", ATTR_END: "10:00:00"},
+            {ATTR_START: "15:00:00", ATTR_END: "20:00:00"},
+        ]
+    }
+
+
+async def test_config_flow_invalid_schedule(hass: HomeAssistant) -> None:
+    """Test the user flow with an invalid schedule."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": SOURCE_USER},
+    )
+    await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={CONF_NAME: "test"},
+    )
+    await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={ATTR_START: "05:00:00", ATTR_END: "10:00:00", ADD_PERIOD: True},
+    )
+    result2 = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={ATTR_START: "03:00:00", ATTR_END: "06:00:00"},
+    )
+    assert result2.get("type") == FlowResultType.FORM
+    assert result2.get("step_id") == "period"
+    assert result2.get("errors")["base"] == "invalid_schedule"
+
+
+async def test_options_flow(hass: HomeAssistant) -> None:
+    """Test the options flow."""
+    config_entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="My Test",
+    )
+    config_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    result = await hass.config_entries.options.async_init(config_entry.entry_id)
+    assert result.get("type") == FlowResultType.FORM
+    assert result.get("step_id") == "init"
+
+    result2 = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={
+            ATTR_START: "01:00:00",
+            ATTR_END: "04:00:00",
+        },
+    )
+    assert result2.get("type") == FlowResultType.CREATE_ENTRY
+    assert result2.get("data") == {
+        ATTR_SCHEDULE: [
+            {ATTR_START: "01:00:00", ATTR_END: "04:00:00"},
+        ]
+    }
+
+
+async def test_invalid_options_flow(hass: HomeAssistant) -> None:
+    """Test invalid options flow."""
+    config_entry = MockConfigEntry(
+        options={ATTR_SCHEDULE: [{ATTR_START: "05:00:00", ATTR_END: "10:00:00"}]},
+        domain=DOMAIN,
+        title="My Test",
+    )
+    config_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    result = await hass.config_entries.options.async_init(config_entry.entry_id)
+    result2 = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={
+            ATTR_SCHEDULE: [f"05:00:00{PERIOD_DELIMITER}10:00:00"],
+            ADD_PERIOD: True,
+            ATTR_START: "01:00:00",
+            ATTR_END: "06:00:00",
+        },
+    )
+    assert result2.get("type") == FlowResultType.FORM
+    assert result2.get("errors")["base"] == "invalid_schedule"
