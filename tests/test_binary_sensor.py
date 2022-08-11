@@ -102,7 +102,7 @@ async def test_new_sensor(hass, schedule):
     """Test new sensor."""
     entity_id = f"{Platform.BINARY_SENSOR}.my_test"
     await setup_entity(hass, "My Test", schedule)
-    schedule.sort(key=lambda period: period[ATTR_START])
+    schedule.sort(key=lambda range: range[ATTR_START])
     assert hass.states.get(entity_id).attributes[ATTR_SCHEDULE] == schedule
 
 
@@ -187,7 +187,7 @@ async def test_next_update(async_track_point_in_time, mock_now, hass):
     # No schedule => no updates.
     assert async_track_point_in_time.call_count == 0
 
-    # Inside a time period.
+    # Inside a time range.
     await setup_entity(
         hass,
         "Test",
@@ -201,7 +201,7 @@ async def test_next_update(async_track_point_in_time, mock_now, hass):
     next_update = async_track_point_in_time.call_args[0][2]
     assert next_update == in_5_minutes
 
-    # After all periods.
+    # After all ranges.
     await setup_entity(
         hass,
         "Test",
@@ -215,7 +215,7 @@ async def test_next_update(async_track_point_in_time, mock_now, hass):
     next_update = async_track_point_in_time.call_args[0][2]
     assert next_update == previous_10_minutes + datetime.timedelta(days=1)
 
-    # Before any period.
+    # Before any range.
     await setup_entity(
         hass,
         "Test",

@@ -1,4 +1,4 @@
-"""Schedule and time period logic."""
+"""Schedule and time range logic."""
 from __future__ import annotations
 
 import datetime
@@ -8,8 +8,8 @@ import voluptuous as vol
 from .const import ATTR_END, ATTR_START
 
 
-class TimePeriod:
-    """Time period with start and end."""
+class TimeRange:
+    """Time range with start and end."""
 
     def __init__(self, start: str, end: str) -> None:
         """Initialize the object."""
@@ -17,8 +17,8 @@ class TimePeriod:
         self.end: datetime.time = datetime.time.fromisoformat(end)
 
     def containing(self, time: datetime.time) -> bool:
-        """Check if the time is inside the period."""
-        # If the period crosses the day boundary.
+        """Check if the time is inside the range."""
+        # If the range crosses the day boundary.
         if self.end <= self.start:
             return self.start <= time or time < self.end
 
@@ -33,14 +33,14 @@ class TimePeriod:
 
 
 class Schedule:
-    """List of TimePeriod."""
+    """List of TimeRange."""
 
     def __init__(self, schedule: list[dict[str, str]]) -> None:
-        """Create a list of TimePeriods representing the schedule."""
+        """Create a list of TimeRanges representing the schedule."""
         self._schedule = [
-            TimePeriod(period[ATTR_START], period[ATTR_END]) for period in schedule
+            TimeRange(range[ATTR_START], range[ATTR_END]) for range in schedule
         ]
-        self._schedule.sort(key=lambda period: period.start)
+        self._schedule.sort(key=lambda range: range.start)
         self._validate()
 
     def _validate(self) -> None:
@@ -49,10 +49,10 @@ class Schedule:
         if len(self._schedule) <= 1:
             return
 
-        # Check all except the last period of the schedule.
+        # Check all except the last range of the schedule.
         for i in range(len(self._schedule) - 1):
-            # The end should be between starts of current and next periods.
-            # Note that adjusted periods are allowed.
+            # The end should be between starts of current and next ranges.
+            # Note that adjusted ranges are allowed.
             if (
                 not self._schedule[i].start
                 < self._schedule[i].end
@@ -60,22 +60,22 @@ class Schedule:
             ):
                 raise vol.Invalid("Invalid input schedule")
 
-        # Check the last period.
+        # Check the last range.
         if self._schedule[-1].end <= self._schedule[-1].start:
-            # If it crosses the day boundary, check overlap with 1st period.
+            # If it crosses the day boundary, check overlap with 1st range.
             if self._schedule[-1].end > self._schedule[0].start:
                 raise vol.Invalid("Invalid input schedule")
 
     def containing(self, time: datetime.time) -> bool:
-        """Check if the time is inside the period."""
-        for period in self._schedule:
-            if period.containing(time):
+        """Check if the time is inside the range."""
+        for range in self._schedule:
+            if range.containing(time):
                 return True
         return False
 
     def to_list(self) -> list[dict[str, str]]:
         """Serialize the object as a list."""
-        return [period.to_dict() for period in self._schedule]
+        return [range.to_dict() for range in self._schedule]
 
     def next_update(self, date: datetime.datetime) -> datetime.datetime | None:
         """Schedule a timer for the point when the state should be changed."""
@@ -87,8 +87,8 @@ class Schedule:
         prev = datetime.time()  # Midnight.
 
         # Get all timestamps (de-duped and sorted).
-        timestamps = [period.start for period in self._schedule] + [
-            period.end for period in self._schedule
+        timestamps = [range.start for range in self._schedule] + [
+            range.end for range in self._schedule
         ]
         timestamps = list(set(timestamps))
         timestamps.sort()

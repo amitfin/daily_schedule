@@ -9,8 +9,8 @@ from homeassistant.data_entry_flow import FlowResultType
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.daily_schedule.config_flow import (
-    ADD_PERIOD,
-    PERIOD_DELIMITER,
+    ADD_RANGE,
+    RANGE_DELIMITER,
 )
 from custom_components.daily_schedule.const import (
     ATTR_END,
@@ -33,7 +33,7 @@ async def test_config_flow_no_schedule(hass: HomeAssistant) -> None:
 
     result2 = await hass.config_entries.flow.async_configure(
         result["flow_id"],
-        user_input={CONF_NAME: "test", ADD_PERIOD: False},
+        user_input={CONF_NAME: "test", ADD_RANGE: False},
     )
 
     assert result2.get("type") == FlowResultType.CREATE_ENTRY
@@ -50,17 +50,17 @@ async def test_config_flow_with_schedule(hass: HomeAssistant) -> None:
 
     result2 = await hass.config_entries.flow.async_configure(
         result["flow_id"],
-        user_input={CONF_NAME: "test"},  # Default is to add a time period
+        user_input={CONF_NAME: "test"},  # Default is to add a time range
     )
     assert result2.get("type") == FlowResultType.FORM
-    assert result2.get("step_id") == "period"
+    assert result2.get("step_id") == "range"
 
     result3 = await hass.config_entries.flow.async_configure(
         result["flow_id"],
-        user_input={ATTR_START: "15:00:00", ATTR_END: "20:00:00", ADD_PERIOD: True},
+        user_input={ATTR_START: "15:00:00", ATTR_END: "20:00:00", ADD_RANGE: True},
     )
     assert result3.get("type") == FlowResultType.FORM
-    assert result3.get("step_id") == "period"
+    assert result3.get("step_id") == "range"
 
     result4 = await hass.config_entries.flow.async_configure(
         result["flow_id"],
@@ -88,14 +88,14 @@ async def test_config_flow_invalid_schedule(hass: HomeAssistant) -> None:
     )
     await hass.config_entries.flow.async_configure(
         result["flow_id"],
-        user_input={ATTR_START: "05:00:00", ATTR_END: "10:00:00", ADD_PERIOD: True},
+        user_input={ATTR_START: "05:00:00", ATTR_END: "10:00:00", ADD_RANGE: True},
     )
     result2 = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={ATTR_START: "03:00:00", ATTR_END: "06:00:00"},
     )
     assert result2.get("type") == FlowResultType.FORM
-    assert result2.get("step_id") == "period"
+    assert result2.get("step_id") == "range"
     assert result2.get("errors")["base"] == "invalid_schedule"
 
 
@@ -143,8 +143,8 @@ async def test_invalid_options_flow(hass: HomeAssistant) -> None:
     result2 = await hass.config_entries.options.async_configure(
         result["flow_id"],
         user_input={
-            ATTR_SCHEDULE: [f"05:00:00{PERIOD_DELIMITER}10:00:00"],
-            ADD_PERIOD: True,
+            ATTR_SCHEDULE: [f"05:00:00{RANGE_DELIMITER}10:00:00"],
+            ADD_RANGE: True,
             ATTR_START: "01:00:00",
             ATTR_END: "06:00:00",
         },

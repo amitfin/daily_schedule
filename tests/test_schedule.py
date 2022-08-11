@@ -7,7 +7,7 @@ import pytest
 import voluptuous as vol
 
 from custom_components.daily_schedule.const import ATTR_END, ATTR_START
-from custom_components.daily_schedule.schedule import Schedule, TimePeriod
+from custom_components.daily_schedule.schedule import Schedule, TimeRange
 
 
 @pytest.mark.parametrize(
@@ -29,10 +29,10 @@ from custom_components.daily_schedule.schedule import Schedule, TimePeriod
         "entire day",
     ],
 )
-def test_time_period(start: str, end: str, time: str, result: bool):
-    """Test for TimePeriod class."""
-    period = TimePeriod(start, end)
-    assert period.containing(datetime.time.fromisoformat(time)) is result
+def test_time_range(start: str, end: str, time: str, result: bool):
+    """Test for TimeRange class."""
+    range = TimeRange(start, end)
+    assert range.containing(datetime.time.fromisoformat(time)) is result
 
 
 @pytest.mark.parametrize(
@@ -50,9 +50,9 @@ def test_time_period(start: str, end: str, time: str, result: bool):
         "entire day",
     ],
 )
-def test_time_period_to_dict(param: dict[str, str]):
-    """Test TimePeriod to_dict."""
-    assert TimePeriod(param[ATTR_START], param[ATTR_END]).to_dict() == param
+def test_time_range_to_dict(param: dict[str, str]):
+    """Test TimeRange to_dict."""
+    assert TimeRange(param[ATTR_START], param[ATTR_END]).to_dict() == param
 
 
 @pytest.mark.parametrize(
@@ -74,7 +74,7 @@ def test_time_period_to_dict(param: dict[str, str]):
         "empty",
         "contained",
         "not contained",
-        "2 periods contained",
+        "2 ranges contained",
     ],
 )
 def test_schedule_containing(schedule: list[dict[str, str]], time: str, result: bool):
@@ -148,7 +148,7 @@ def test_invalid(schedule: list[dict[str, str]]):
 def test_to_list(schedule: list[dict[str, str]]) -> None:
     """Test schedule to string list function."""
     str_list = Schedule(schedule).to_list()
-    schedule.sort(key=lambda period: period[ATTR_START])
+    schedule.sort(key=lambda range: range[ATTR_START])
     assert str_list == schedule
 
 
@@ -159,7 +159,7 @@ def test_to_list(schedule: list[dict[str, str]]) -> None:
         (-10, -5, datetime.timedelta(days=1).total_seconds() - 10),
         (5, 10, 5),
     ],
-    ids=["inside period", "after all periods", "before all periods"],
+    ids=["inside range", "after all ranges", "before all ranges"],
 )
 def test_next_update(
     start_sec_offset: int,

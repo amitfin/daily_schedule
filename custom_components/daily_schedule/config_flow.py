@@ -15,20 +15,20 @@ import homeassistant.helpers.config_validation as cv
 from .const import ATTR_END, ATTR_SCHEDULE, ATTR_START, DOMAIN
 from .schedule import Schedule
 
-ADD_PERIOD = "add_period"
-PERIOD_DELIMITER = " - "
+ADD_RANGE = "add_range"
+RANGE_DELIMITER = " - "
 
 CONFIG_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_NAME): selector.TextSelector(),
-        vol.Required(ADD_PERIOD, default=True): selector.BooleanSelector(),
+        vol.Required(ADD_RANGE, default=True): selector.BooleanSelector(),
     }
 )
-CONFIG_PERIOD = vol.Schema(
+CONFIG_RANGE = vol.Schema(
     {
         vol.Required(ATTR_START, default="00:00:00"): selector.TimeSelector(),
         vol.Required(ATTR_END, default="00:00:00"): selector.TimeSelector(),
-        vol.Required(ADD_PERIOD, default=False): selector.BooleanSelector(),
+        vol.Required(ADD_RANGE, default=False): selector.BooleanSelector(),
     }
 )
 OPTIONS_SCHEMA = vol.Schema(
@@ -53,9 +53,9 @@ class DailyScheduleConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is None:
             return self.async_show_form(step_id="user", data_schema=CONFIG_SCHEMA)
 
-        if user_input.get(ADD_PERIOD, False):
+        if user_input.get(ADD_RANGE, False):
             self.options[CONF_NAME] = user_input[CONF_NAME]
-            return await self.async_step_period()
+            return await self.async_step_range()
 
         return self.async_create_entry(
             title=user_input[CONF_NAME],
@@ -63,29 +63,29 @@ class DailyScheduleConfigFlow(ConfigFlow, domain=DOMAIN):
             options={ATTR_SCHEDULE: []},
         )
 
-    async def async_step_period(
+    async def async_step_range(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle adding a time period."""
+        """Handle adding a time range."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
 
             # Validate the new schedule.
-            time_periods = self.options[ATTR_SCHEDULE].copy()
-            time_periods.append(
+            time_ranges = self.options[ATTR_SCHEDULE].copy()
+            time_ranges.append(
                 {ATTR_START: user_input[ATTR_START], ATTR_END: user_input[ATTR_END]}
             )
             try:
-                schedule = Schedule(time_periods)
+                schedule = Schedule(time_ranges)
             except vol.Invalid:
                 errors["base"] = "invalid_schedule"
 
             if not errors:
                 self.options[ATTR_SCHEDULE] = schedule.to_list()
 
-                if user_input.get(ADD_PERIOD, False):
-                    return await self.async_step_period()
+                if user_input.get(ADD_RANGE, False):
+                    return await self.async_step_range()
 
                 return self.async_create_entry(
                     title=self.options[CONF_NAME],
@@ -94,7 +94,7 @@ class DailyScheduleConfigFlow(ConfigFlow, domain=DOMAIN):
                 )
 
         return self.async_show_form(
-            step_id="period", data_schema=CONFIG_PERIOD, errors=errors
+            step_id="range", data_schema=CONFIG_RANGE, errors=errors
         )
 
     @staticmethod
@@ -117,18 +117,18 @@ class OptionsFlowHandler(OptionsFlow):
 
         if user_input is not None:
 
-            # Get all periods except for the ones which were unchecked by the user.
-            time_periods = [
+            # Get all ranges except for the ones which were unchecked by the user.
+            time_ranges = [
                 {
-                    ATTR_START: period.split(PERIOD_DELIMITER)[0],
-                    ATTR_END: period.split(PERIOD_DELIMITER)[1],
+                    ATTR_START: range.split(RANGE_DELIMITER)[0],
+                    ATTR_END: range.split(RANGE_DELIMITER)[1],
                 }
-                for period in user_input.get(ATTR_SCHEDULE, [])
+                for range in user_input.get(ATTR_SCHEDULE, [])
             ]
 
-            # Add the additional period.
-            if user_input.get(ADD_PERIOD, True):
-                time_periods.append(
+            # Add the additional range.
+            if user_input.get(ADD_RANGE, True):
+                time_ranges.append(
                     {
                         ATTR_START: user_input.get(ATTR_START, "00:00:00"),
                         ATTR_END: user_input.get(ATTR_END, "00:00:00"),
@@ -136,7 +136,7 @@ class OptionsFlowHandler(OptionsFlow):
                 )
 
             try:
-                schedule = Schedule(time_periods)
+                schedule = Schedule(time_ranges)
             except vol.Invalid:
                 errors["base"] = "invalid_schedule"
 
@@ -146,17 +146,17 @@ class OptionsFlowHandler(OptionsFlow):
                     data={ATTR_SCHEDULE: schedule.to_list()},
                 )
 
-        periods = [
-            f"{period[ATTR_START]}{PERIOD_DELIMITER}{period[ATTR_END]}"
-            for period in self.config_entry.options.get(ATTR_SCHEDULE, [])
+        ranges = [
+            f"{range[ATTR_START]}{RANGE_DELIMITER}{range[ATTR_END]}"
+            for range in self.config_entry.options.get(ATTR_SCHEDULE, [])
         ]
-        if periods:
+        if ranges:
             schema = vol.Schema(
                 {
-                    vol.Required(ATTR_SCHEDULE, default=periods): cv.multi_select(
-                        periods
+                    vol.Required(ATTR_SCHEDULE, default=ranges): cv.multi_select(
+                        ranges
                     ),
-                    vol.Required(ADD_PERIOD, default=False): cv.boolean,
+                    vol.Required(ADD_RANGE, default=False): cv.boolean,
                 }
             ).extend(OPTIONS_SCHEMA.schema)
         else:
