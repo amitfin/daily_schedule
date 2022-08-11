@@ -1,4 +1,6 @@
 """The tests for the daily schedule sensor component."""
+from __future__ import annotations
+
 import datetime
 from unittest.mock import patch
 

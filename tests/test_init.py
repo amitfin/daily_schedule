@@ -1,4 +1,6 @@
 """The tests for the daily schedule integration."""
+from __future__ import annotations
+
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er

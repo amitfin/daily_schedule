@@ -1,4 +1,6 @@
 """Tests for the Daily Schedule config flow."""
+from __future__ import annotations
+
 from homeassistant.config_entries import SOURCE_USER
 from homeassistant.const import CONF_NAME
 from homeassistant.core import HomeAssistant

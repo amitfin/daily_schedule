@@ -1,4 +1,6 @@
 """The tests for the schedule class."""
+from __future__ import annotations
+
 import datetime
 
 import pytest
