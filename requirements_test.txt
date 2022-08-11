@@ -1,2 +1,2 @@
-homeassistant
-pytest-homeassistant-custom-component
+-r requirements_dev.txt
+pytest-homeassistant-custom-component >= 0.11.8
