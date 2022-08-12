@@ -1,3 +1,5 @@
 {
-    "name": "Daily Schedule"
+    "name": "Daily Schedule",
+    "render_readme": true,
+    "hide_default_branch": true
 }

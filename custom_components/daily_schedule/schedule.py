@@ -5,11 +5,11 @@ import datetime
 
 import voluptuous as vol
 
-from .const import ATTR_END, ATTR_START
+from .const import CONF_TO, CONF_FROM
 
 
 class TimeRange:
-    """Time range with start and end."""
+    """Time range with start and end (since "from" is a reserved word)."""
 
     def __init__(self, start: str, end: str) -> None:
         """Initialize the object."""
@@ -27,8 +27,8 @@ class TimeRange:
     def to_dict(self) -> dict[str, str]:
         """Serialize the object as a dict."""
         return {
-            ATTR_START: self.start.isoformat(),
-            ATTR_END: self.end.isoformat(),
+            CONF_FROM: self.start.isoformat(),
+            CONF_TO: self.end.isoformat(),
         }
 
 
@@ -38,9 +38,10 @@ class Schedule:
     def __init__(self, schedule: list[dict[str, str]]) -> None:
         """Create a list of TimeRanges representing the schedule."""
         self._schedule = [
-            TimeRange(range[ATTR_START], range[ATTR_END]) for range in schedule
+            TimeRange(time_range[CONF_FROM], time_range[CONF_TO])
+            for time_range in schedule
         ]
-        self._schedule.sort(key=lambda range: range.start)
+        self._schedule.sort(key=lambda time_range: time_range.start)
         self._validate()
 
     def _validate(self) -> None:
@@ -60,7 +61,7 @@ class Schedule:
             ):
                 raise vol.Invalid("Invalid input schedule")
 
-        # Check the last range.
+        # Check the last time range.
         if self._schedule[-1].end <= self._schedule[-1].start:
             # If it crosses the day boundary, check overlap with 1st range.
             if self._schedule[-1].end > self._schedule[0].start:
@@ -68,14 +69,14 @@ class Schedule:
 
     def containing(self, time: datetime.time) -> bool:
         """Check if the time is inside the range."""
-        for range in self._schedule:
-            if range.containing(time):
+        for time_range in self._schedule:
+            if time_range.containing(time):
                 return True
         return False
 
     def to_list(self) -> list[dict[str, str]]:
         """Serialize the object as a list."""
-        return [range.to_dict() for range in self._schedule]
+        return [time_range.to_dict() for time_range in self._schedule]
 
     def next_update(self, date: datetime.datetime) -> datetime.datetime | None:
         """Schedule a timer for the point when the state should be changed."""
@@ -87,8 +88,8 @@ class Schedule:
         prev = datetime.time()  # Midnight.
 
         # Get all timestamps (de-duped and sorted).
-        timestamps = [range.start for range in self._schedule] + [
-            range.end for range in self._schedule
+        timestamps = [time_range.start for time_range in self._schedule] + [
+            time_range.end for time_range in self._schedule
         ]
         timestamps = list(set(timestamps))
         timestamps.sort()

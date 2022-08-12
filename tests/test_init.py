@@ -8,9 +8,9 @@ from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.daily_schedule.const import (
-    ATTR_END,
+    CONF_TO,
     ATTR_SCHEDULE,
-    ATTR_START,
+    CONF_FROM,
     DOMAIN,
 )
 
@@ -35,7 +35,7 @@ async def test_setup_change_remove_config_entry(hass: HomeAssistant) -> None:
     # Update the config entry.
     hass.config_entries.async_update_entry(
         config_entry,
-        options={ATTR_SCHEDULE: [{ATTR_START: "00:00:00", ATTR_END: "00:00:00"}]},
+        options={ATTR_SCHEDULE: [{CONF_FROM: "00:00:00", CONF_TO: "00:00:00"}]},
     )
     await hass.async_block_till_done()
 
@@ -43,7 +43,7 @@ async def test_setup_change_remove_config_entry(hass: HomeAssistant) -> None:
     state = hass.states.get(entity_id)
     assert state.state == "on"
     assert state.attributes[ATTR_SCHEDULE] == [
-        {ATTR_START: "00:00:00", ATTR_END: "00:00:00"},
+        {CONF_FROM: "00:00:00", CONF_TO: "00:00:00"},
     ]
 
     # Remove the config entry.

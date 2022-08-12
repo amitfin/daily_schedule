@@ -1,6 +1,6 @@
 """Constants for the Daily Schedule integration."""
 DOMAIN = "daily_schedule"
 
-ATTR_START = "start"
-ATTR_END = "end"
+CONF_FROM = "from"
+CONF_TO = "to"
 ATTR_SCHEDULE = "schedule"

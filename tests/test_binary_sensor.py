@@ -15,9 +15,9 @@ from pytest_homeassistant_custom_component.common import (
 )
 
 from custom_components.daily_schedule.const import (
-    ATTR_END,
+    CONF_TO,
     ATTR_SCHEDULE,
-    ATTR_START,
+    CONF_FROM,
     DOMAIN,
 )
 
@@ -43,48 +43,48 @@ async def setup_entity(
         (
             [
                 {
-                    ATTR_START: "01:02:03",
-                    ATTR_END: "04:05:06",
+                    CONF_FROM: "01:02:03",
+                    CONF_TO: "04:05:06",
                 },
             ],
         ),
         (
             [
                 {
-                    ATTR_START: "04:05:06",
-                    ATTR_END: "01:02:03",
+                    CONF_FROM: "04:05:06",
+                    CONF_TO: "01:02:03",
                 },
             ],
         ),
         (
             [
                 {
-                    ATTR_START: "00:00:00",
-                    ATTR_END: "00:00:00",
+                    CONF_FROM: "00:00:00",
+                    CONF_TO: "00:00:00",
                 },
             ],
         ),
         (
             [
                 {
-                    ATTR_START: "07:08:09",
-                    ATTR_END: "10:11:12",
+                    CONF_FROM: "07:08:09",
+                    CONF_TO: "10:11:12",
                 },
                 {
-                    ATTR_START: "01:02:03",
-                    ATTR_END: "04:05:06",
+                    CONF_FROM: "01:02:03",
+                    CONF_TO: "04:05:06",
                 },
             ],
         ),
         (
             [
                 {
-                    ATTR_START: "10:11:12",
-                    ATTR_END: "01:02:03",
+                    CONF_FROM: "10:11:12",
+                    CONF_TO: "01:02:03",
                 },
                 {
-                    ATTR_START: "01:02:03",
-                    ATTR_END: "04:05:06",
+                    CONF_FROM: "01:02:03",
+                    CONF_TO: "04:05:06",
                 },
             ],
         ),
@@ -102,7 +102,7 @@ async def test_new_sensor(hass, schedule):
     """Test new sensor."""
     entity_id = f"{Platform.BINARY_SENSOR}.my_test"
     await setup_entity(hass, "My Test", schedule)
-    schedule.sort(key=lambda range: range[ATTR_START])
+    schedule.sort(key=lambda time_range: time_range[CONF_FROM])
     assert hass.states.get(entity_id).attributes[ATTR_SCHEDULE] == schedule
 
 
@@ -116,8 +116,8 @@ async def test_state(mock_now, hass):
         hass,
         "My Test",
         [
-            {ATTR_START: "23:50:00", ATTR_END: "23:55:00"},
-            {ATTR_START: "00:00:00", ATTR_END: "00:05:00"},
+            {CONF_FROM: "23:50:00", CONF_TO: "23:55:00"},
+            {CONF_FROM: "00:00:00", CONF_TO: "00:05:00"},
         ],
     )
 
@@ -138,28 +138,28 @@ async def test_state(mock_now, hass):
         (
             [
                 {
-                    ATTR_START: "00:00:00",
-                    ATTR_END: "00:00:00",
+                    CONF_FROM: "00:00:00",
+                    CONF_TO: "00:00:00",
                 },
             ],
         ),
         (
             [
                 {
-                    ATTR_START: "07:00:00",
-                    ATTR_END: "07:00:00",
+                    CONF_FROM: "07:00:00",
+                    CONF_TO: "07:00:00",
                 },
             ],
         ),
         (
             [
                 {
-                    ATTR_START: "17:00:00",
-                    ATTR_END: "07:00:00",
+                    CONF_FROM: "17:00:00",
+                    CONF_TO: "07:00:00",
                 },
                 {
-                    ATTR_START: "07:00:00",
-                    ATTR_END: "17:00:00",
+                    CONF_FROM: "07:00:00",
+                    CONF_TO: "17:00:00",
                 },
             ],
         ),
@@ -193,8 +193,8 @@ async def test_next_update(async_track_point_in_time, mock_now, hass):
         "Test",
         [
             {
-                ATTR_START: previous_5_minutes.time().isoformat(),
-                ATTR_END: in_5_minutes.time().isoformat(),
+                CONF_FROM: previous_5_minutes.time().isoformat(),
+                CONF_TO: in_5_minutes.time().isoformat(),
             }
         ],
     )
@@ -207,8 +207,8 @@ async def test_next_update(async_track_point_in_time, mock_now, hass):
         "Test",
         [
             {
-                ATTR_START: previous_10_minutes.time().isoformat(),
-                ATTR_END: previous_5_minutes.time().isoformat(),
+                CONF_FROM: previous_10_minutes.time().isoformat(),
+                CONF_TO: previous_5_minutes.time().isoformat(),
             }
         ],
     )
@@ -221,8 +221,8 @@ async def test_next_update(async_track_point_in_time, mock_now, hass):
         "Test",
         [
             {
-                ATTR_START: in_5_minutes.time().isoformat(),
-                ATTR_END: in_10_minutes.time().isoformat(),
+                CONF_FROM: in_5_minutes.time().isoformat(),
+                CONF_TO: in_10_minutes.time().isoformat(),
             }
         ],
     )
