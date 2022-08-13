@@ -12,7 +12,7 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 import homeassistant.helpers.config_validation as cv
 
-from .const import CONF_TO, ATTR_SCHEDULE, CONF_FROM, DOMAIN
+from .const import ATTR_SCHEDULE, CONF_FROM, CONF_TO, DOMAIN
 from .schedule import Schedule
 
 ADD_RANGE = "add_range"

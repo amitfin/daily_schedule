@@ -16,8 +16,8 @@
                 "title": "Add Time Range",
                 "description": "Set a time range when the sensor will be on.",
                 "data": {
-                    "from": "From time",
-                    "to": "To time",
+                    "from": "From",
+                    "to": "To",
                     "add_range": "Add an additional time range"
                 }
             }
@@ -33,8 +33,8 @@
                 "description": "Modify the time ranges in the daily schedule.",
                 "data": {
                     "add_range": "Add a new time range",
-                    "from": "From time (new)",
-                    "to": "To time (new)"
+                    "from": "From (new)",
+                    "to": "To (new)"
                 }
             }
         }

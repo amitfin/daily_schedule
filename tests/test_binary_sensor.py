@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 import datetime
-from unittest.mock import patch
+import voluptuous as vol
 
+from unittest.mock import patch
 import pytest
 
-from homeassistant.const import STATE_OFF, STATE_ON, Platform
+from homeassistant.const import ATTR_ENTITY_ID, STATE_OFF, STATE_ON, Platform
 from homeassistant.core import HomeAssistant
 
 from pytest_homeassistant_custom_component.common import (
@@ -15,10 +16,11 @@ from pytest_homeassistant_custom_component.common import (
 )
 
 from custom_components.daily_schedule.const import (
-    CONF_TO,
     ATTR_SCHEDULE,
     CONF_FROM,
+    CONF_TO,
     DOMAIN,
+    SERVICE_SET,
 )
 
 
@@ -228,3 +230,65 @@ async def test_next_update(async_track_point_in_time, mock_now, hass):
     )
     next_update = async_track_point_in_time.call_args[0][2]
     assert next_update == in_5_minutes
+
+
+async def test_set(hass):
+    """Test set service."""
+    schedule1 = [{CONF_FROM: "01:02:03", CONF_TO: "04:05:06"}]
+    schedule2 = [{CONF_FROM: "07:08:09", CONF_TO: "10:11:12"}]
+    entity_id = f"{Platform.BINARY_SENSOR}.my_test"
+
+    await setup_entity(hass, "My Test", schedule1)
+    assert hass.states.get(entity_id).attributes[ATTR_SCHEDULE] == schedule1
+
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_SET,
+        {ATTR_ENTITY_ID: entity_id, ATTR_SCHEDULE: schedule2},
+    )
+    await hass.async_block_till_done()
+    assert hass.states.get(entity_id).attributes[ATTR_SCHEDULE] == schedule2
+
+
+@pytest.mark.parametrize(
+    ["schedule"],
+    [
+        (
+            [
+                {
+                    CONF_FROM: "04:05:05",
+                    CONF_TO: "07:08:09",
+                },
+                {
+                    CONF_FROM: "01:02:03",
+                    CONF_TO: "04:05:06",
+                },
+            ],
+        ),
+        (
+            [
+                {
+                    CONF_FROM: "07:08:09",
+                    CONF_TO: "01:02:04",
+                },
+                {
+                    CONF_FROM: "01:02:03",
+                    CONF_TO: "04:05:06",
+                },
+            ],
+        ),
+    ],
+    ids=["overlap", "overnight_overlap"],
+)
+async def test_invalid_set(hass, schedule):
+    """Test invalid input to set method."""
+    entity_id = f"{Platform.BINARY_SENSOR}.my_test"
+    await setup_entity(hass, "My Test", [])
+    with pytest.raises(vol.Invalid) as excinfo:
+        await hass.services.async_call(
+            DOMAIN,
+            SERVICE_SET,
+            {ATTR_ENTITY_ID: entity_id, ATTR_SCHEDULE: schedule},
+            blocking=True,
+        )
+    assert "Invalid input schedule" in str(excinfo.value)

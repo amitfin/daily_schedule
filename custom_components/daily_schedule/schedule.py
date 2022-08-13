@@ -5,7 +5,7 @@ import datetime
 
 import voluptuous as vol
 
-from .const import CONF_TO, CONF_FROM
+from .const import CONF_FROM, CONF_TO
 
 
 class TimeRange:

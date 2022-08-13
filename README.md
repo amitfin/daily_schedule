@@ -6,7 +6,7 @@
 [![hacs][hacsbadge]][hacs]
 ![Project Maintenance][maintenance-shield]
 
-The Daily Schedule integration provides a binary sensor that gets its On/Off state according to the user-defined schedule.
+The Daily Schedule integration provides a binary sensor that gets its ON/OFF state according to the user-defined schedule.
 A schedule is a list of time ranges, defined by FROM and TO times.
 
 ## Schedule Validation

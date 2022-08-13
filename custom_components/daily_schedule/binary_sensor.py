@@ -1,17 +1,47 @@
 """Support for representing daily schedule as binary sensors."""
 from __future__ import annotations
 
+import datetime
 from typing import Any
+import voluptuous as vol
 
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
-from homeassistant.helpers import event as event_helper
+from homeassistant.helpers import event as event_helper, entity_platform
+import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 import homeassistant.util.dt as dt_util
 
-from .const import ATTR_SCHEDULE
+from .const import ATTR_SCHEDULE, CONF_FROM, CONF_TO, SERVICE_SET
 from .schedule import Schedule
+
+
+def remove_micros_and_tz(time: datetime.time) -> str:
+    """Remove microseconds and timezone from a time object."""
+    return time.replace(microsecond=0, tzinfo=None).isoformat()
+
+
+def validate_schedule(schedule: list[dict[str, str]]) -> list[dict[str, str]]:
+    """Validate the schedule by instantiating a new Schedule object."""
+    return Schedule(schedule).to_list()
+
+
+ENTRY_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_FROM): vol.All(cv.time, remove_micros_and_tz),
+        vol.Required(CONF_TO): vol.All(cv.time, remove_micros_and_tz),
+    },
+    extra=vol.ALLOW_EXTRA,
+)
+SERVICE_SET_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_SCHEDULE): vol.All(
+            cv.ensure_list, [ENTRY_SCHEMA], validate_schedule
+        ),
+    },
+    extra=vol.ALLOW_EXTRA,
+)
 
 
 async def async_setup_entry(
@@ -20,15 +50,9 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Initialize config entry."""
-    async_add_entities(
-        [
-            DailyScheduleSenosr(
-                config_entry.title,
-                config_entry.entry_id,
-                config_entry.options.get(ATTR_SCHEDULE, []),
-            )
-        ]
-    )
+    async_add_entities([DailyScheduleSenosr(config_entry)])
+    platform = entity_platform.async_get_current_platform()
+    platform.async_register_entity_service(SERVICE_SET, SERVICE_SET_SCHEMA, "async_set")
 
 
 class DailyScheduleSenosr(BinarySensorEntity):
@@ -36,24 +60,18 @@ class DailyScheduleSenosr(BinarySensorEntity):
 
     _attr_icon = "mdi:timetable"
 
-    def __init__(
-        self, name: str, unique_id: str, schedule: list[dict[str, str]]
-    ) -> None:
+    def __init__(self, config_entry: ConfigEntry) -> None:
         """Initialize object with defaults."""
-        self._name = name
-        self._attr_unique_id = unique_id
-        self._schedule: Schedule = Schedule(schedule)
+        self._config_entry = config_entry
+        self._attr_name = config_entry.title
+        self._attr_unique_id = config_entry.entry_id
+        self._schedule: Schedule = Schedule(config_entry.options.get(ATTR_SCHEDULE, []))
         self._unsub_update: CALLBACK_TYPE | None = None
 
     @property
     def should_poll(self) -> bool:
         """No polling needed."""
         return False
-
-    @property
-    def name(self) -> str:
-        """Return the name of the entity."""
-        return self._name
 
     @property
     def is_on(self) -> bool:
@@ -79,6 +97,13 @@ class DailyScheduleSenosr(BinarySensorEntity):
         await super().async_added_to_hass()
         self.async_on_remove(self._clean_up_listener)
         self._update_state()
+
+    async def async_set(self, schedule: list[dict[str, str]]) -> None:
+        """Update the config entry with the new list. Required for non-admin use cases."""
+        self.hass.config_entries.async_update_entry(
+            self._config_entry,
+            options={ATTR_SCHEDULE: schedule},
+        )
 
     def _schedule_update(self) -> None:
         """Schedule a timer for the point when the state should be changed."""

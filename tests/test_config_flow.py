@@ -13,9 +13,9 @@ from custom_components.daily_schedule.config_flow import (
     RANGE_DELIMITER,
 )
 from custom_components.daily_schedule.const import (
-    CONF_TO,
     ATTR_SCHEDULE,
     CONF_FROM,
+    CONF_TO,
     DOMAIN,
 )
 
