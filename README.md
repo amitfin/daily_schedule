@@ -17,63 +17,41 @@ Use this link:
 
 [![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=daily_schedule)
 
-Or, in the Home Assistant UI go to:
+Or, in the Home Assistant UI go through the following path:
 
-<style>
-table, th, td {
-    border-style: none!important;
-    border-collapse: separate!important;
-    vertical-align: center!important;
-}
-</style>
+[![Open your Home Assistant instance and show your settings menu.](https://my.home-assistant.io/badges/config.svg)](https://my.home-assistant.io/redirect/config/)
 
-<table><th>
-<td>
-    <a href="https://my.home-assistant.io/redirect/config/" target="_blank"><img src="https://my.home-assistant.io/badges/config.svg" alt="Open your Home Assistant instance and show your settings menu." /></a>
-</td>
-<td>=></td>
-<td>
-    <a href="https://my.home-assistant.io/redirect/devices/" target="_blank"><img src="https://my.home-assistant.io/badges/devices.svg" alt="Open your Home Assistant instance and show your devices." /></a>
-</td>
-<td>=></td>
-<td>
-    <a href="https://my.home-assistant.io/redirect/helpers/" target="_blank"><img src="https://my.home-assistant.io/badges/helpers.svg" alt="Open your Home Assistant instance and show your helper entities." /></a>
-</td>
-<td>=></td>
-<td>click "+ Create helper" button and search for "Daily Schedule"</td>
-</th></table>
+[![Open your Home Assistant instance and show your devices.](https://my.home-assistant.io/badges/devices.svg)](https://my.home-assistant.io/redirect/devices/)
 
-Follow the UI flow to provide a name and set the time ranges.
+[![Open your Home Assistant instance and show your helper entities.](https://my.home-assistant.io/badges/helpers.svg)](https://my.home-assistant.io/redirect/helpers/)
+
+Click "+ Create helper" button and search for "Daily Schedule".
+
+Here are screenshots from the new Daily Schedule flow:
 
 <img src="screenshots/new1.png" alt="New Daily Schedule Name" height="400"/>
 <img src="screenshots/new2.png" alt="New Daily Schedule Time Range" height="400"/>
 
 ## Editing Daily Schedule
 
-In the Home Assistant UI go to:
+In the Home Assistant UI go through the following path:
 
-<table><th>
-<td>
-    <a href="https://my.home-assistant.io/redirect/config/" target="_blank"><img src="https://my.home-assistant.io/badges/config.svg" alt="Open your Home Assistant instance and show your settings menu." /></a>
-</td>
-<td>=></td>
-<td>
-    <a href="https://my.home-assistant.io/redirect/devices/" target="_blank"><img src="https://my.home-assistant.io/badges/devices.svg" alt="Open your Home Assistant instance and show your devices." /></a>
-</td>
-<td>=></td>
-<td>
-    <a href="https://my.home-assistant.io/redirect/helpers/" target="_blank"><img src="https://my.home-assistant.io/badges/helpers.svg" alt="Open your Home Assistant instance and show your helper entities." /></a>
-</td>
-<td>=></td>
-<td>find and click the entry on the list</td>
-<td>=></td>
-<td>click the "Daily Schedule Options"</td>
-</th></table>
+[![Open your Home Assistant instance and show your settings menu.](https://my.home-assistant.io/badges/config.svg)](https://my.home-assistant.io/redirect/config/)
+
+[![Open your Home Assistant instance and show your devices.](https://my.home-assistant.io/badges/devices.svg)](https://my.home-assistant.io/redirect/devices/)
+
+[![Open your Home Assistant instance and show your helper entities.](https://my.home-assistant.io/badges/helpers.svg)](https://my.home-assistant.io/redirect/helpers/)
+
+=> Find and click the entry on the list
+
+=> Click the "Daily Schedule Options"
 
 Follow the UI flow to add or remove time ranges:
 1) Uncheck a time range to remove it.
 2) Check the "Add a new time range" for adding a new time range.
 3) It's not possible to edit a time range. Instead, remove the exsiting one and add a new one, which can be done in a single step.
+
+Here are screenshots from the Daily Schedule options flow:
 
 <img src="screenshots/edit1.png" alt="Edit Daily Schedule Dialog" height="600"/>
 <img src="screenshots/edit2.png" alt="Edit Daily Schedule Time Range" height="600"/>
