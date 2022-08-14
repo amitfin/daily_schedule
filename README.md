@@ -25,12 +25,12 @@ Or, in the Home Assistant UI go through the following path:
 
 [![Open your Home Assistant instance and show your helper entities.](https://my.home-assistant.io/badges/helpers.svg)](https://my.home-assistant.io/redirect/helpers/)
 
-Click "+ Create helper" button and search for "Daily Schedule".
+=> Click "+ Create helper" button and search for "Daily Schedule".
 
 Here are screenshots from the new Daily Schedule flow:
 
-<img src="screenshots/new1.png" alt="New Daily Schedule Name" height="400"/>
-<img src="screenshots/new2.png" alt="New Daily Schedule Time Range" height="400"/>
+<img src="screenshots/new1.png" alt="New Daily Schedule Name" height="200"/>
+<img src="screenshots/new2.png" alt="New Daily Schedule Time Range" height="200"/>
 
 ## Editing Daily Schedule
 
@@ -53,8 +53,8 @@ Follow the UI flow to add or remove time ranges:
 
 Here are screenshots from the Daily Schedule options flow:
 
-<img src="screenshots/edit1.png" alt="Edit Daily Schedule Dialog" height="600"/>
-<img src="screenshots/edit2.png" alt="Edit Daily Schedule Time Range" height="600"/>
+<img src="screenshots/edit1.png" alt="Edit Daily Schedule Dialog" height="300"/>
+<img src="screenshots/edit2.png" alt="Edit Daily Schedule Time Range" height="300"/>
 
 ## Schedule Validation
 1. Time range length must be positive (not zero or negative).
