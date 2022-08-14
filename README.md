@@ -29,7 +29,7 @@ Or, in the Home Assistant UI go through the following path:
 
 Here are screenshots from the new Daily Schedule flow:
 
-![New Daily Schedule Name](screenshots/new1.png)![New Daily Schedule Time Range](screenshots/new2.png)
+![New Daily Schedule Name](https://raw.githubusercontent.com/amitfin/daily_schedule/master/screenshots/new1.png)![New Daily Schedule Time Range](https://raw.githubusercontent.com/amitfin/daily_schedule/master/screenshots/new2.png)
 
 ## Editing Daily Schedule
 
@@ -52,7 +52,7 @@ Follow the UI flow to add or remove time ranges:
 
 Here are screenshots from the Daily Schedule options flow:
 
-![Edit Daily Schedule Dialog](screenshots/edit1.png)![Edit Daily Schedule Time Range](screenshots/edit2.png)
+![Edit Daily Schedule Dialog](https://raw.githubusercontent.com/amitfin/daily_schedule/master/screenshots/edit1.png)![Edit Daily Schedule Time Range](https://raw.githubusercontent.com/amitfin/daily_schedule/master/screenshots/edit2.png)
 
 ## Schedule Validation
 1. Time range length must be positive (not zero or negative).
