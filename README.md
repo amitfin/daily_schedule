@@ -19,7 +19,7 @@ Use this link:
 
 Or, in the Home Assistant UI go to:
 
-<table><tr>
+<table border="0"><tr>
 <td>
     <a href="https://my.home-assistant.io/redirect/config/" target="_blank"><img src="https://my.home-assistant.io/badges/config.svg" alt="Open your Home Assistant instance and show your settings menu." /></a>
 </td>
@@ -44,7 +44,7 @@ Follow the UI flow to provide a name and set the time ranges.
 
 In the Home Assistant UI go to:
 
-<table><tr>
+<table border="0"><tr>
 <td>
     <a href="https://my.home-assistant.io/redirect/config/" target="_blank"><img src="https://my.home-assistant.io/badges/config.svg" alt="Open your Home Assistant instance and show your settings menu." /></a>
 </td>
