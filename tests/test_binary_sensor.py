@@ -2,9 +2,9 @@
 from __future__ import annotations
 
 import datetime
+from unittest.mock import patch
 import voluptuous as vol
 
-from unittest.mock import patch
 import pytest
 
 from homeassistant.const import ATTR_ENTITY_ID, STATE_OFF, STATE_ON, Platform
@@ -16,8 +16,8 @@ from pytest_homeassistant_custom_component.common import (
 )
 
 from custom_components.daily_schedule.const import (
-    ATTR_SCHEDULE,
     CONF_FROM,
+    CONF_SCHEDULE,
     CONF_TO,
     DOMAIN,
     SERVICE_SET,
@@ -29,7 +29,7 @@ async def setup_entity(
 ) -> None:
     """Create a new entity by adding a config entry."""
     config_entry = MockConfigEntry(
-        options={ATTR_SCHEDULE: schedule},
+        options={CONF_SCHEDULE: schedule},
         domain=DOMAIN,
         title=name,
     )
@@ -105,7 +105,7 @@ async def test_new_sensor(hass, schedule):
     entity_id = f"{Platform.BINARY_SENSOR}.my_test"
     await setup_entity(hass, "My Test", schedule)
     schedule.sort(key=lambda time_range: time_range[CONF_FROM])
-    assert hass.states.get(entity_id).attributes[ATTR_SCHEDULE] == schedule
+    assert hass.states.get(entity_id).attributes[CONF_SCHEDULE] == schedule
 
 
 @patch("homeassistant.util.dt.now")
@@ -239,15 +239,15 @@ async def test_set(hass):
     entity_id = f"{Platform.BINARY_SENSOR}.my_test"
 
     await setup_entity(hass, "My Test", schedule1)
-    assert hass.states.get(entity_id).attributes[ATTR_SCHEDULE] == schedule1
+    assert hass.states.get(entity_id).attributes[CONF_SCHEDULE] == schedule1
 
     await hass.services.async_call(
         DOMAIN,
         SERVICE_SET,
-        {ATTR_ENTITY_ID: entity_id, ATTR_SCHEDULE: schedule2},
+        {ATTR_ENTITY_ID: entity_id, CONF_SCHEDULE: schedule2},
     )
     await hass.async_block_till_done()
-    assert hass.states.get(entity_id).attributes[ATTR_SCHEDULE] == schedule2
+    assert hass.states.get(entity_id).attributes[CONF_SCHEDULE] == schedule2
 
 
 @pytest.mark.parametrize(
@@ -288,7 +288,7 @@ async def test_invalid_set(hass, schedule):
         await hass.services.async_call(
             DOMAIN,
             SERVICE_SET,
-            {ATTR_ENTITY_ID: entity_id, ATTR_SCHEDULE: schedule},
+            {ATTR_ENTITY_ID: entity_id, CONF_SCHEDULE: schedule},
             blocking=True,
         )
     assert "Invalid input schedule" in str(excinfo.value)

@@ -12,7 +12,7 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 import homeassistant.helpers.config_validation as cv
 
-from .const import ATTR_SCHEDULE, CONF_FROM, CONF_TO, DOMAIN
+from .const import CONF_FROM, CONF_SCHEDULE, CONF_TO, DOMAIN
 from .schedule import Schedule
 
 ADD_RANGE = "add_range"
@@ -44,7 +44,7 @@ class DailyScheduleConfigFlow(ConfigFlow, domain=DOMAIN):
 
     def __init__(self):
         """Initialize a new flow."""
-        self.options: dict[str, Any] = {ATTR_SCHEDULE: []}
+        self.options: dict[str, Any] = {CONF_SCHEDULE: []}
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -60,7 +60,7 @@ class DailyScheduleConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_create_entry(
             title=user_input[CONF_NAME],
             data={},
-            options={ATTR_SCHEDULE: []},
+            options={CONF_SCHEDULE: []},
         )
 
     async def async_step_time_range(
@@ -72,17 +72,17 @@ class DailyScheduleConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
 
             # Validate the new schedule.
-            time_ranges = self.options[ATTR_SCHEDULE].copy()
+            time_ranges = self.options[CONF_SCHEDULE].copy()
             time_ranges.append(
                 {CONF_FROM: user_input[CONF_FROM], CONF_TO: user_input[CONF_TO]}
             )
             try:
                 schedule = Schedule(time_ranges)
-            except vol.Invalid:
-                errors["base"] = "invalid_schedule"
+            except vol.Invalid as err:
+                errors["base"] = "overlap" if "overlap" in str(err) else "length"
 
             if not errors:
-                self.options[ATTR_SCHEDULE] = schedule.to_list()
+                self.options[CONF_SCHEDULE] = schedule.to_list()
 
                 if user_input.get(ADD_RANGE, False):
                     return await self.async_step_time_range()
@@ -90,7 +90,7 @@ class DailyScheduleConfigFlow(ConfigFlow, domain=DOMAIN):
                 return self.async_create_entry(
                     title=self.options[CONF_NAME],
                     data={},
-                    options={ATTR_SCHEDULE: self.options[ATTR_SCHEDULE]},
+                    options={CONF_SCHEDULE: self.options[CONF_SCHEDULE]},
                 )
 
         return self.async_show_form(
@@ -117,16 +117,16 @@ class OptionsFlowHandler(OptionsFlow):
 
         if user_input is not None:
 
-            # Get all ranges except for the ones which were unchecked by the user.
+            # Get all time ranges except for the ones which were unchecked by the user.
             time_ranges = [
                 {
                     CONF_FROM: time_range.split(RANGE_DELIMITER)[0],
                     CONF_TO: time_range.split(RANGE_DELIMITER)[1],
                 }
-                for time_range in user_input.get(ATTR_SCHEDULE, [])
+                for time_range in user_input.get(CONF_SCHEDULE, [])
             ]
 
-            # Add the additional range.
+            # Add the additional time range.
             if user_input.get(ADD_RANGE, True):
                 time_ranges.append(
                     {
@@ -137,24 +137,24 @@ class OptionsFlowHandler(OptionsFlow):
 
             try:
                 schedule = Schedule(time_ranges)
-            except vol.Invalid:
-                errors["base"] = "invalid_schedule"
+            except vol.Invalid as err:
+                errors["base"] = "overlap" if "overlap" in str(err) else "length"
 
             if not errors:
                 return self.async_create_entry(
                     title="",
-                    data={ATTR_SCHEDULE: schedule.to_list()},
+                    data={CONF_SCHEDULE: schedule.to_list()},
                 )
 
-        ranges = [
+        time_ranges = [
             f"{time_range[CONF_FROM]}{RANGE_DELIMITER}{time_range[CONF_TO]}"
-            for time_range in self.config_entry.options.get(ATTR_SCHEDULE, [])
+            for time_range in self.config_entry.options.get(CONF_SCHEDULE, [])
         ]
-        if ranges:
+        if time_ranges:
             schema = vol.Schema(
                 {
-                    vol.Required(ATTR_SCHEDULE, default=ranges): cv.multi_select(
-                        ranges
+                    vol.Required(CONF_SCHEDULE, default=time_ranges): cv.multi_select(
+                        time_ranges
                     ),
                     vol.Required(ADD_RANGE, default=False): cv.boolean,
                 }

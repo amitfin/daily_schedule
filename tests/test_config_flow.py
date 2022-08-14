@@ -13,8 +13,8 @@ from custom_components.daily_schedule.config_flow import (
     RANGE_DELIMITER,
 )
 from custom_components.daily_schedule.const import (
-    ATTR_SCHEDULE,
     CONF_FROM,
+    CONF_SCHEDULE,
     CONF_TO,
     DOMAIN,
 )
@@ -38,7 +38,7 @@ async def test_config_flow_no_schedule(hass: HomeAssistant) -> None:
 
     assert result2.get("type") == FlowResultType.CREATE_ENTRY
     assert result2.get("title") == "test"
-    assert result2.get("options") == {ATTR_SCHEDULE: []}
+    assert result2.get("options") == {CONF_SCHEDULE: []}
 
 
 async def test_config_flow_with_schedule(hass: HomeAssistant) -> None:
@@ -69,7 +69,7 @@ async def test_config_flow_with_schedule(hass: HomeAssistant) -> None:
     assert result4.get("type") == FlowResultType.CREATE_ENTRY
     assert result4.get("title") == "test"
     assert result4.get("options") == {
-        ATTR_SCHEDULE: [
+        CONF_SCHEDULE: [
             {CONF_FROM: "05:00:00", CONF_TO: "10:00:00"},
             {CONF_FROM: "15:00:00", CONF_TO: "20:00:00"},
         ]
@@ -96,7 +96,7 @@ async def test_config_flow_invalid_schedule(hass: HomeAssistant) -> None:
     )
     assert result2.get("type") == FlowResultType.FORM
     assert result2.get("step_id") == "time_range"
-    assert result2.get("errors")["base"] == "invalid_schedule"
+    assert result2.get("errors")["base"] == "overlap"
 
 
 async def test_options_flow(hass: HomeAssistant) -> None:
@@ -122,7 +122,7 @@ async def test_options_flow(hass: HomeAssistant) -> None:
     )
     assert result2.get("type") == FlowResultType.CREATE_ENTRY
     assert result2.get("data") == {
-        ATTR_SCHEDULE: [
+        CONF_SCHEDULE: [
             {CONF_FROM: "01:00:00", CONF_TO: "04:00:00"},
         ]
     }
@@ -131,7 +131,7 @@ async def test_options_flow(hass: HomeAssistant) -> None:
 async def test_invalid_options_flow(hass: HomeAssistant) -> None:
     """Test invalid options flow."""
     config_entry = MockConfigEntry(
-        options={ATTR_SCHEDULE: [{CONF_FROM: "05:00:00", CONF_TO: "10:00:00"}]},
+        options={CONF_SCHEDULE: [{CONF_FROM: "05:00:00", CONF_TO: "10:00:00"}]},
         domain=DOMAIN,
         title="My Test",
     )
@@ -143,11 +143,11 @@ async def test_invalid_options_flow(hass: HomeAssistant) -> None:
     result2 = await hass.config_entries.options.async_configure(
         result["flow_id"],
         user_input={
-            ATTR_SCHEDULE: [f"05:00:00{RANGE_DELIMITER}10:00:00"],
+            CONF_SCHEDULE: [f"05:00:00{RANGE_DELIMITER}10:00:00"],
             ADD_RANGE: True,
             CONF_FROM: "01:00:00",
             CONF_TO: "06:00:00",
         },
     )
     assert result2.get("type") == FlowResultType.FORM
-    assert result2.get("errors")["base"] == "invalid_schedule"
+    assert result2.get("errors")["base"] == "overlap"

@@ -1,7 +1,8 @@
 {
   "config": {
     "error": {
-      "invalid_schedule": "Invalid time ranges in schedule. Enter the last range again."
+      "overlap": "Time ranges can't overlap. Enter the new time range again.",
+      "length": "The length of a time range should be positive. Enter the new time range again."
     },
     "step": {
       "user": {
@@ -25,7 +26,8 @@
   },
   "options": {
     "error": {
-      "invalid_schedule": "Invalid time ranges in schedule. Enter the new range again."
+      "overlap": "Time ranges can't overlap. Enter the new time range again.",
+      "length": "The length of a time range should be positive. Enter the new time range again."
     },
     "step": {
       "init": {

@@ -7,6 +7,8 @@ import voluptuous as vol
 
 from .const import CONF_FROM, CONF_TO
 
+INVALID_PREFIX = "Invalid input schedule"
+
 
 class TimeRange:
     """Time range with start and end (since "from" is a reserved word)."""
@@ -31,6 +33,10 @@ class TimeRange:
             CONF_TO: self.end.isoformat(),
         }
 
+    def to_str(self) -> str:
+        """Serialize the object as a string."""
+        return f"{self.start.isoformat()} - {self.end.isoformat()}"
+
 
 class Schedule:
     """List of TimeRange."""
@@ -50,22 +56,39 @@ class Schedule:
         if len(self._schedule) <= 1:
             return
 
-        # Check all except the last range of the schedule.
+        # Check all except the last time range of the schedule.
         for i in range(len(self._schedule) - 1):
-            # The end should be between starts of current and next ranges.
-            # Note that adjusted ranges are allowed.
-            if (
-                not self._schedule[i].start
-                < self._schedule[i].end
-                <= self._schedule[i + 1].start
-            ):
-                raise vol.Invalid("Invalid input schedule")
+
+            # The end time should be greater than the start time.
+            if not self._schedule[i].end > self._schedule[i].start:
+                raise vol.Invalid(
+                    f"{INVALID_PREFIX}: the length of the time range "
+                    f"'{self._schedule[i].to_str()}' is "
+                    + (
+                        "zero."
+                        if self._schedule[i].end == self._schedule[i].start
+                        else "negative."
+                    )
+                )
+
+            # Check that the time range doesn't overlap with the next one.
+            # Note that adjusted time ranges are allowed.
+            if self._schedule[i].end > self._schedule[i + 1].start:
+                raise vol.Invalid(
+                    f"{INVALID_PREFIX}: these time ranges overlap: "
+                    f"'{self._schedule[i].to_str()}' and "
+                    f"'{self._schedule[i + 1].to_str()}'."
+                )
 
         # Check the last time range.
         if self._schedule[-1].end <= self._schedule[-1].start:
             # If it crosses the day boundary, check overlap with 1st range.
             if self._schedule[-1].end > self._schedule[0].start:
-                raise vol.Invalid("Invalid input schedule")
+                raise vol.Invalid(
+                    f"{INVALID_PREFIX}: these time ranges overlap: "
+                    f"'{self._schedule[-1].to_str()}' and "
+                    f"'{self._schedule[0].to_str()}'."
+                )
 
     def containing(self, time: datetime.time) -> bool:
         """Check if the time is inside the range."""
@@ -77,6 +100,10 @@ class Schedule:
     def to_list(self) -> list[dict[str, str]]:
         """Serialize the object as a list."""
         return [time_range.to_dict() for time_range in self._schedule]
+
+    def to_str(self) -> str:
+        """Serialize the object as a string."""
+        ", ".join(time_range.to_str() for time_range in self._schedule)
 
     def next_update(self, date: datetime.datetime) -> datetime.datetime | None:
         """Schedule a timer for the point when the state should be changed."""

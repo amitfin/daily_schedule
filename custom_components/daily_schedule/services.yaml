@@ -5,7 +5,7 @@ set:
       description: Entity id of the daily_schedule that should be set.
       example: daily_schedule.lights
     schedule:
-      description: List of the "on" time periods.
+      description: List of the ON time ranges.
       example:
         [
           { from: "03:00:00", to: "04:30:00" },

@@ -3,6 +3,6 @@ DOMAIN = "daily_schedule"
 
 CONF_FROM = "from"
 CONF_TO = "to"
-ATTR_SCHEDULE = "schedule"
+CONF_SCHEDULE = "schedule"
 
 SERVICE_SET = "set"

@@ -13,18 +13,13 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 import homeassistant.util.dt as dt_util
 
-from .const import ATTR_SCHEDULE, CONF_FROM, CONF_TO, SERVICE_SET
+from .const import CONF_FROM, CONF_SCHEDULE, CONF_TO, SERVICE_SET
 from .schedule import Schedule
 
 
 def remove_micros_and_tz(time: datetime.time) -> str:
     """Remove microseconds and timezone from a time object."""
     return time.replace(microsecond=0, tzinfo=None).isoformat()
-
-
-def validate_schedule(schedule: list[dict[str, str]]) -> list[dict[str, str]]:
-    """Validate the schedule by instantiating a new Schedule object."""
-    return Schedule(schedule).to_list()
 
 
 ENTRY_SCHEMA = vol.Schema(
@@ -36,9 +31,7 @@ ENTRY_SCHEMA = vol.Schema(
 )
 SERVICE_SET_SCHEMA = vol.Schema(
     {
-        vol.Required(ATTR_SCHEDULE): vol.All(
-            cv.ensure_list, [ENTRY_SCHEMA], validate_schedule
-        ),
+        vol.Required(CONF_SCHEDULE): vol.All(cv.ensure_list, [ENTRY_SCHEMA]),
     },
     extra=vol.ALLOW_EXTRA,
 )
@@ -65,7 +58,7 @@ class DailyScheduleSenosr(BinarySensorEntity):
         self._config_entry = config_entry
         self._attr_name = config_entry.title
         self._attr_unique_id = config_entry.entry_id
-        self._schedule: Schedule = Schedule(config_entry.options.get(ATTR_SCHEDULE, []))
+        self._schedule: Schedule = Schedule(config_entry.options.get(CONF_SCHEDULE, []))
         self._unsub_update: CALLBACK_TYPE | None = None
 
     @property
@@ -82,7 +75,7 @@ class DailyScheduleSenosr(BinarySensorEntity):
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return the state attributes of the sensor."""
         return {
-            ATTR_SCHEDULE: self._schedule.to_list(),
+            CONF_SCHEDULE: self._schedule.to_list(),
         }
 
     @callback
@@ -102,7 +95,7 @@ class DailyScheduleSenosr(BinarySensorEntity):
         """Update the config entry with the new list. Required for non-admin use cases."""
         self.hass.config_entries.async_update_entry(
             self._config_entry,
-            options={ATTR_SCHEDULE: schedule},
+            options={CONF_SCHEDULE: Schedule(schedule).to_list()},
         )
 
     def _schedule_update(self) -> None:

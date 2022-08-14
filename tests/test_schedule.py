@@ -7,7 +7,11 @@ import pytest
 import voluptuous as vol
 
 from custom_components.daily_schedule.const import CONF_TO, CONF_FROM
-from custom_components.daily_schedule.schedule import Schedule, TimeRange
+from custom_components.daily_schedule.schedule import (
+    Schedule,
+    INVALID_PREFIX,
+    TimeRange,
+)
 
 
 @pytest.mark.parametrize(
@@ -82,8 +86,38 @@ def test_schedule_containing(schedule: list[dict[str, str]], time: str, result: 
 
 
 @pytest.mark.parametrize(
-    ["schedule"],
+    ["schedule", "reason"],
     [
+        (
+            [
+                {
+                    CONF_FROM: "01:02:03",
+                    CONF_TO: "04:05:06",
+                },
+                {
+                    CONF_FROM: "07:08:09",
+                    CONF_TO: "07:08:09",
+                },
+                {
+                    CONF_FROM: "10:11:12",
+                    CONF_TO: "10:11:13",
+                },
+            ],
+            "zero",
+        ),
+        (
+            [
+                {
+                    CONF_FROM: "04:05:06",
+                    CONF_TO: "01:02:03",
+                },
+                {
+                    CONF_FROM: "07:08:09",
+                    CONF_TO: "10:11:12",
+                },
+            ],
+            "negative",
+        ),
         (
             [
                 {
@@ -95,6 +129,7 @@ def test_schedule_containing(schedule: list[dict[str, str]], time: str, result: 
                     CONF_TO: "04:05:06",
                 },
             ],
+            "overlap",
         ),
         (
             [
@@ -107,15 +142,17 @@ def test_schedule_containing(schedule: list[dict[str, str]], time: str, result: 
                     CONF_TO: "04:05:06",
                 },
             ],
+            "overlap",
         ),
     ],
-    ids=["overlap", "overnight_overlap"],
+    ids=["zero length", "negative lenght", "overlap", "overnight_overlap"],
 )
-def test_invalid(schedule: list[dict[str, str]]):
+def test_invalid(schedule: list[dict[str, str]], reason: str):
     """Test invalid schedule."""
     with pytest.raises(vol.Invalid) as excinfo:
         Schedule(schedule)
-    assert "Invalid input schedule" in str(excinfo.value)
+    assert INVALID_PREFIX in str(excinfo.value)
+    assert reason in str(excinfo.value)
 
 
 @pytest.mark.parametrize(
@@ -158,7 +195,7 @@ def test_to_list(schedule: list[dict[str, str]]) -> None:
         (-10, -5, datetime.timedelta(days=1).total_seconds() - 10),
         (5, 10, 5),
     ],
-    ids=["inside range", "after all ranges", "before all ranges"],
+    ids=["inside range", "after all rangess", "before all ranges"],
 )
 def test_next_update(
     from_sec_offset: int,
