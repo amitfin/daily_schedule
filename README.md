@@ -19,21 +19,29 @@ Use this link:
 
 Or, in the Home Assistant UI go to:
 
-<table border="0"><tr>
+<style>
+table, th, td {
+    border-style: none!important;
+    border-collapse: separate!important;
+    vertical-align: center!important;
+}
+</style>
+
+<table><th>
 <td>
     <a href="https://my.home-assistant.io/redirect/config/" target="_blank"><img src="https://my.home-assistant.io/badges/config.svg" alt="Open your Home Assistant instance and show your settings menu." /></a>
 </td>
-<td valign="top">=></td>
+<td>=></td>
 <td>
     <a href="https://my.home-assistant.io/redirect/devices/" target="_blank"><img src="https://my.home-assistant.io/badges/devices.svg" alt="Open your Home Assistant instance and show your devices." /></a>
 </td>
-<td valign="top">=></td>
+<td>=></td>
 <td>
     <a href="https://my.home-assistant.io/redirect/helpers/" target="_blank"><img src="https://my.home-assistant.io/badges/helpers.svg" alt="Open your Home Assistant instance and show your helper entities." /></a>
 </td>
-<td valign="top">=></td>
-<td valign="top">click "+ Create helper" button and search for "Daily Schedule".</td>
-</tr></table>
+<td>=></td>
+<td>click "+ Create helper" button and search for "Daily Schedule"</td>
+</th></table>
 
 Follow the UI flow to provide a name and set the time ranges.
 
@@ -44,23 +52,23 @@ Follow the UI flow to provide a name and set the time ranges.
 
 In the Home Assistant UI go to:
 
-<table border="0"><tr>
+<table><th>
 <td>
     <a href="https://my.home-assistant.io/redirect/config/" target="_blank"><img src="https://my.home-assistant.io/badges/config.svg" alt="Open your Home Assistant instance and show your settings menu." /></a>
 </td>
-<td valign="top">=></td>
+<td>=></td>
 <td>
     <a href="https://my.home-assistant.io/redirect/devices/" target="_blank"><img src="https://my.home-assistant.io/badges/devices.svg" alt="Open your Home Assistant instance and show your devices." /></a>
 </td>
-<td valign="top">=></td>
+<td>=></td>
 <td>
     <a href="https://my.home-assistant.io/redirect/helpers/" target="_blank"><img src="https://my.home-assistant.io/badges/helpers.svg" alt="Open your Home Assistant instance and show your helper entities." /></a>
 </td>
-<td valign="top">=></td>
-<td valign="top">find and click the entry on the list</td>
-<td valign="top">=></td>
-<td valign="top">click the "Daily Schedule Options".</td>
-</tr></table>
+<td>=></td>
+<td>find and click the entry on the list</td>
+<td>=></td>
+<td>click the "Daily Schedule Options"</td>
+</th></table>
 
 Follow the UI flow to add or remove time ranges:
 1) Uncheck a time range to remove it.
