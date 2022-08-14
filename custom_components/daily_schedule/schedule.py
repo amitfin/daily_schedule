@@ -7,8 +7,6 @@ import voluptuous as vol
 
 from .const import CONF_FROM, CONF_TO
 
-INVALID_PREFIX = "Invalid input schedule"
-
 
 class TimeRange:
     """Time range with start and end (since "from" is a reserved word)."""
@@ -62,8 +60,7 @@ class Schedule:
             # The end time should be greater than the start time.
             if not self._schedule[i].end > self._schedule[i].start:
                 raise vol.Invalid(
-                    f"{INVALID_PREFIX}: the length of the time range "
-                    f"'{self._schedule[i].to_str()}' is "
+                    f"'{self._schedule[i].to_str()}' length is "
                     + (
                         "zero."
                         if self._schedule[i].end == self._schedule[i].start
@@ -75,8 +72,7 @@ class Schedule:
             # Note that adjusted time ranges are allowed.
             if self._schedule[i].end > self._schedule[i + 1].start:
                 raise vol.Invalid(
-                    f"{INVALID_PREFIX}: these time ranges overlap: "
-                    f"'{self._schedule[i].to_str()}' and "
+                    f"'{self._schedule[i].to_str()}' overlaps "
                     f"'{self._schedule[i + 1].to_str()}'."
                 )
 
@@ -85,9 +81,8 @@ class Schedule:
             # If it crosses the day boundary, check overlap with 1st range.
             if self._schedule[-1].end > self._schedule[0].start:
                 raise vol.Invalid(
-                    f"{INVALID_PREFIX}: these time ranges overlap: "
-                    f"'{self._schedule[-1].to_str()}' and "
-                    f"'{self._schedule[0].to_str()}'."
+                    f"'{self._schedule[i].to_str()}' overlaps "
+                    f"'{self._schedule[i + 1].to_str()}'."
                 )
 
     def containing(self, time: datetime.time) -> bool:

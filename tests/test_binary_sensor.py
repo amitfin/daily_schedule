@@ -291,4 +291,4 @@ async def test_invalid_set(hass, schedule):
             {ATTR_ENTITY_ID: entity_id, CONF_SCHEDULE: schedule},
             blocking=True,
         )
-    assert "Invalid input schedule" in str(excinfo.value)
+    assert "overlap" in str(excinfo.value)

@@ -7,11 +7,7 @@ import pytest
 import voluptuous as vol
 
 from custom_components.daily_schedule.const import CONF_TO, CONF_FROM
-from custom_components.daily_schedule.schedule import (
-    Schedule,
-    INVALID_PREFIX,
-    TimeRange,
-)
+from custom_components.daily_schedule.schedule import Schedule, TimeRange
 
 
 @pytest.mark.parametrize(
@@ -151,7 +147,6 @@ def test_invalid(schedule: list[dict[str, str]], reason: str):
     """Test invalid schedule."""
     with pytest.raises(vol.Invalid) as excinfo:
         Schedule(schedule)
-    assert INVALID_PREFIX in str(excinfo.value)
     assert reason in str(excinfo.value)
 
 
