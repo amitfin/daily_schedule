@@ -50,17 +50,32 @@ class DailyScheduleConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle a flow initialized by the user."""
-        if user_input is None:
-            return self.async_show_form(step_id="user", data_schema=CONFIG_SCHEMA)
+        errors: dict[str, str] = {}
 
-        if user_input.get(ADD_RANGE, False):
-            self.options[CONF_NAME] = user_input[CONF_NAME]
-            return await self.async_step_time_range()
+        if user_input is not None:
 
-        return self.async_create_entry(
-            title=user_input[CONF_NAME],
-            data={},
-            options={CONF_SCHEDULE: []},
+            # Verify uniqueness of the name (used as the key).
+            duplicated = filter(
+                lambda entry: entry.title == user_input[CONF_NAME],
+                self.hass.config_entries.async_entries(DOMAIN),
+            )
+            if list(duplicated):
+                errors["base"] = "duplicated"
+
+            if not errors:
+
+                if user_input.get(ADD_RANGE, False):
+                    self.options[CONF_NAME] = user_input[CONF_NAME]
+                    return await self.async_step_time_range()
+
+                return self.async_create_entry(
+                    title=user_input[CONF_NAME],
+                    data={},
+                    options={CONF_SCHEDULE: []},
+                )
+
+        return self.async_show_form(
+            step_id="user", data_schema=CONFIG_SCHEMA, errors=errors
         )
 
     async def async_step_time_range(
@@ -78,7 +93,7 @@ class DailyScheduleConfigFlow(ConfigFlow, domain=DOMAIN):
             )
             try:
                 schedule = Schedule(time_ranges)
-            except vol.Invalid as err:
+            except ValueError as err:
                 errors["base"] = "overlap" if "overlap" in str(err) else "length"
 
             if not errors:
@@ -137,7 +152,7 @@ class OptionsFlowHandler(OptionsFlow):
 
             try:
                 schedule = Schedule(time_ranges)
-            except vol.Invalid as err:
+            except ValueError as err:
                 errors["base"] = "overlap" if "overlap" in str(err) else "length"
 
             if not errors:

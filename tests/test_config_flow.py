@@ -41,6 +41,29 @@ async def test_config_flow_no_schedule(hass: HomeAssistant) -> None:
     assert result2.get("options") == {CONF_SCHEDULE: []}
 
 
+async def test_config_flow_duplicated(hass: HomeAssistant) -> None:
+    """Test the user flow without a duplicated config entry name."""
+    name = "My Test"
+    config_entry = MockConfigEntry(
+        domain=DOMAIN,
+        title=name,
+    )
+    config_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": SOURCE_USER},
+    )
+    result2 = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={CONF_NAME: name, ADD_RANGE: False},
+    )
+    assert result2.get("type") == FlowResultType.FORM
+    assert result2.get("errors")["base"] == "duplicated"
+
+
 async def test_config_flow_with_schedule(hass: HomeAssistant) -> None:
     """Test the user flow with a schedule."""
     result = await hass.config_entries.flow.async_init(

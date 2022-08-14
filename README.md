@@ -55,7 +55,8 @@ Here are screenshots from the Daily Schedule options flow:
 ![Edit Daily Schedule Dialog](https://raw.githubusercontent.com/amitfin/daily_schedule/master/screenshots/edit1.png)![Edit Daily Schedule Time Range](https://raw.githubusercontent.com/amitfin/daily_schedule/master/screenshots/edit2.png)
 
 ## Schedule Validation
-1. Time range length must be positive (not zero or negative).
+The schedule can be saved only if it passes following checks:
+1. Any time range length must be positive (not zero or negative).
 2. Time ranges can’t overlap but can adjust.
 3. The TO of the latest time range (in the day) can be smaller or equal to its FROM, and it will be treated as a time in the following day.
     - This means that the binary sensor will be always ON when there is a single time range with the same FROM and TO.

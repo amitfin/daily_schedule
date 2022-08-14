@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import datetime
 from unittest.mock import patch
-import voluptuous as vol
 
 import pytest
 
@@ -284,7 +283,7 @@ async def test_invalid_set(hass, schedule):
     """Test invalid input to set method."""
     entity_id = f"{Platform.BINARY_SENSOR}.my_test"
     await setup_entity(hass, "My Test", [])
-    with pytest.raises(vol.Invalid) as excinfo:
+    with pytest.raises(ValueError) as excinfo:
         await hass.services.async_call(
             DOMAIN,
             SERVICE_SET,

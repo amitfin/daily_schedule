@@ -4,7 +4,6 @@ from __future__ import annotations
 import datetime
 
 import pytest
-import voluptuous as vol
 
 from custom_components.daily_schedule.const import CONF_TO, CONF_FROM
 from custom_components.daily_schedule.schedule import Schedule, TimeRange
@@ -145,7 +144,7 @@ def test_schedule_containing(schedule: list[dict[str, str]], time: str, result: 
 )
 def test_invalid(schedule: list[dict[str, str]], reason: str):
     """Test invalid schedule."""
-    with pytest.raises(vol.Invalid) as excinfo:
+    with pytest.raises(ValueError) as excinfo:
         Schedule(schedule)
     assert reason in str(excinfo.value)
 

@@ -3,8 +3,6 @@ from __future__ import annotations
 
 import datetime
 
-import voluptuous as vol
-
 from .const import CONF_FROM, CONF_TO
 
 
@@ -59,7 +57,7 @@ class Schedule:
 
             # The end time should be greater than the start time.
             if not self._schedule[i].end > self._schedule[i].start:
-                raise vol.Invalid(
+                raise ValueError(
                     f"'{self._schedule[i].to_str()}' length is "
                     + (
                         "zero."
@@ -71,7 +69,7 @@ class Schedule:
             # Check that the time range doesn't overlap with the next one.
             # Note that adjusted time ranges are allowed.
             if self._schedule[i].end > self._schedule[i + 1].start:
-                raise vol.Invalid(
+                raise ValueError(
                     f"'{self._schedule[i].to_str()}' overlaps "
                     f"'{self._schedule[i + 1].to_str()}'."
                 )
@@ -80,7 +78,7 @@ class Schedule:
         if self._schedule[-1].end <= self._schedule[-1].start:
             # If it crosses the day boundary, check overlap with 1st range.
             if self._schedule[-1].end > self._schedule[0].start:
-                raise vol.Invalid(
+                raise ValueError(
                     f"'{self._schedule[i].to_str()}' overlaps "
                     f"'{self._schedule[i + 1].to_str()}'."
                 )
