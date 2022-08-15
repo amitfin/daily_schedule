@@ -55,7 +55,7 @@ Here are screenshots from the Daily Schedule options flow:
 ![Edit Daily Schedule Dialog](https://raw.githubusercontent.com/amitfin/daily_schedule/master/screenshots/edit1.png)![Edit Daily Schedule Time Range](https://raw.githubusercontent.com/amitfin/daily_schedule/master/screenshots/edit2.png)
 
 ## Schedule Validation
-The schedule can be saved only if it passes following checks:
+The schedule can be saved only if it passes the following checks:
 1. Any time range length must be positive (not zero or negative).
 2. Time ranges can’t overlap but can adjust.
 3. The TO of the latest time range (in the day) can be smaller or equal to its FROM, and it will be treated as a time in the following day.

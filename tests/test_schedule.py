@@ -182,6 +182,28 @@ def test_to_list(schedule: list[dict[str, str]]) -> None:
     assert str_list == schedule
 
 
+def test_to_str() -> None:
+    """Test schedule to string function."""
+    schedule = Schedule(
+        [
+            {
+                CONF_FROM: "03:00:00",
+                CONF_TO: "04:00:00",
+            },
+            {
+                CONF_FROM: "01:00:00",
+                CONF_TO: "02:00:00",
+            },
+        ]
+    )
+    assert schedule.to_str() == ", ".join(
+        [
+            f"{time_period[CONF_FROM]} - {time_period[CONF_TO]}"
+            for time_period in schedule.to_list()
+        ]
+    )
+
+
 @pytest.mark.parametrize(
     ["from_sec_offset", "to_sec_offset", "next_update_sec_offset"],
     [
