@@ -96,7 +96,7 @@ class Schedule:
 
     def to_str(self) -> str:
         """Serialize the object as a string."""
-        ", ".join(time_range.to_str() for time_range in self._schedule)
+        return ", ".join([time_range.to_str() for time_range in self._schedule])
 
     def next_update(self, date: datetime.datetime) -> datetime.datetime | None:
         """Schedule a timer for the point when the state should be changed."""
