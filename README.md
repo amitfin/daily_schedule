@@ -7,11 +7,12 @@
 ![Project Maintenance][maintenance-shield]
 
 The Daily Schedule integration provides a binary sensor that gets its ON/OFF state according to the user-defined schedule.
-A schedule is a list of time ranges (FROM and TO).
 
-A demo video clip can be found [here](https://youtu.be/3cVtPPC3S4U).
+Below are video clips demoing  Daily Schedule usage:
+- [Create and modify](https://youtu.be/3cVtPPC3S4U)
+- [Automation rule](https://youtu.be/5toly_W7fUU)
 
-## Adding Daily Schedule
+## Create Daily Schedule
 
 Use this link:
 
@@ -31,7 +32,7 @@ Here are screenshots from the new Daily Schedule flow:
 
 ![New Daily Schedule Name](https://raw.githubusercontent.com/amitfin/daily_schedule/master/screenshots/new1.png)![New Daily Schedule Time Range](https://raw.githubusercontent.com/amitfin/daily_schedule/master/screenshots/new2.png)
 
-## Editing Daily Schedule
+## Modify Daily Schedule
 
 In the Home Assistant UI go through the following path:
 
@@ -55,6 +56,7 @@ Here are screenshots from the Daily Schedule options flow:
 ![Edit Daily Schedule Dialog](https://raw.githubusercontent.com/amitfin/daily_schedule/master/screenshots/edit1.png)![Edit Daily Schedule Time Range](https://raw.githubusercontent.com/amitfin/daily_schedule/master/screenshots/edit2.png)
 
 ## Schedule Validation
+
 The schedule can be saved only if it passes the following checks:
 1. Any time range length must be positive (not zero or negative).
 2. Time ranges can’t overlap but can adjust.
