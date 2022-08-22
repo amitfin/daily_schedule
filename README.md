@@ -55,6 +55,10 @@ Here are screenshots from the Daily Schedule options flow:
 
 ![Edit Daily Schedule Dialog](https://raw.githubusercontent.com/amitfin/daily_schedule/master/screenshots/edit1.png)![Edit Daily Schedule Time Range](https://raw.githubusercontent.com/amitfin/daily_schedule/master/screenshots/edit2.png)
 
+Note: modifying Daily Schedule causes the binary sensor state to become ```unavailable``` momentarily. It's a side effect of the old binary sensor getting unloaded, just before the new binary sensor is created. This side effect might impact Automation Rules. Two ways to mitigate it can be:
+  1) The rule should be triggered by explicit state values, e.g. by using the ```to: ["on", "off"]``` property in the state's trigger
+  2) The rule should have the right mode, e.g. ```mode: restart```
+
 ## Schedule Validation
 
 The schedule can be saved only if it passes the following checks:
