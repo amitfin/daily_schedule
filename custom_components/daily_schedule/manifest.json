@@ -2,7 +2,7 @@
   "domain": "daily_schedule",
   "integration_type": "helper",
   "name": "Daily Schedule",
-  "version": "1.3",
+  "version": "1.4",
   "documentation": "https://github.com/amitfin/daily_schedule",
   "issue_tracker": "https://github.com/amitfin/daily_schedule/issues",
   "quality_scale": "platinum",
