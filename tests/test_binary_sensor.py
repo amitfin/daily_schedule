@@ -15,6 +15,7 @@ from pytest_homeassistant_custom_component.common import (
 )
 
 from custom_components.daily_schedule.const import (
+    ATTR_NEXT_UPDATE,
     CONF_FROM,
     CONF_SCHEDULE,
     CONF_TO,
@@ -172,6 +173,7 @@ async def test_entire_day(hass, schedule):
     entity_id = f"{Platform.BINARY_SENSOR}.my_test"
     await setup_entity(hass, "My Test", schedule)
     assert hass.states.get(entity_id).state == STATE_ON
+    assert not hass.states.get(entity_id).attributes[ATTR_NEXT_UPDATE]
 
 
 @patch("homeassistant.util.dt.now")
@@ -191,7 +193,7 @@ async def test_next_update(async_track_point_in_time, mock_now, hass):
     # Inside a time range.
     await setup_entity(
         hass,
-        "Test",
+        "Test1",
         [
             {
                 CONF_FROM: previous_5_minutes.time().isoformat(),
@@ -199,13 +201,18 @@ async def test_next_update(async_track_point_in_time, mock_now, hass):
             }
         ],
     )
+    assert hass.states.get(f"{Platform.BINARY_SENSOR}.test1").state == STATE_ON
     next_update = async_track_point_in_time.call_args[0][2]
     assert next_update == in_5_minutes
+    assert (
+        hass.states.get(f"{Platform.BINARY_SENSOR}.test1").attributes[ATTR_NEXT_UPDATE]
+        == in_5_minutes
+    )
 
     # After all ranges.
     await setup_entity(
         hass,
-        "Test",
+        "Test2",
         [
             {
                 CONF_FROM: previous_10_minutes.time().isoformat(),
@@ -213,13 +220,19 @@ async def test_next_update(async_track_point_in_time, mock_now, hass):
             }
         ],
     )
+    assert hass.states.get(f"{Platform.BINARY_SENSOR}.test2").state == STATE_OFF
+    expected_next_update = previous_10_minutes + datetime.timedelta(days=1)
     next_update = async_track_point_in_time.call_args[0][2]
-    assert next_update == previous_10_minutes + datetime.timedelta(days=1)
+    assert next_update == expected_next_update
+    assert (
+        hass.states.get(f"{Platform.BINARY_SENSOR}.test2").attributes[ATTR_NEXT_UPDATE]
+        == expected_next_update
+    )
 
     # Before any range.
     await setup_entity(
         hass,
-        "Test",
+        "Test3",
         [
             {
                 CONF_FROM: in_5_minutes.time().isoformat(),
@@ -227,8 +240,13 @@ async def test_next_update(async_track_point_in_time, mock_now, hass):
             }
         ],
     )
+    assert hass.states.get(f"{Platform.BINARY_SENSOR}.test3").state == STATE_OFF
     next_update = async_track_point_in_time.call_args[0][2]
     assert next_update == in_5_minutes
+    assert (
+        hass.states.get(f"{Platform.BINARY_SENSOR}.test3").attributes[ATTR_NEXT_UPDATE]
+        == in_5_minutes
+    )
 
 
 async def test_set(hass):

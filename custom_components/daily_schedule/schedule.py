@@ -107,24 +107,27 @@ class Schedule:
         today = date.date()
         prev = datetime.time()  # Midnight.
 
-        # Get all timestamps (de-duped and sorted).
-        timestamps = [time_range.start for time_range in self._schedule] + [
-            time_range.end for time_range in self._schedule
-        ]
-        timestamps = list(set(timestamps))
-        timestamps.sort()
+        # Get ON and OFF timestamp sets.
+        to_on = set(time_range.start for time_range in self._schedule)
+        to_off = set(time_range.end for time_range in self._schedule)
+
+        # Get the relevant set.
+        # Remove "on to on" transitions of adjusted time ranges (as state doesn't cahnge).
+        timestamps = (
+            sorted(to_off - to_on) if self.containing(date.time()) else sorted(to_on)
+        )
+
+        # If time ranges cover the entire day (the subtraction result is empty).
+        if not timestamps:
+            return None
 
         # Find the smallest timestamp which is bigger than time.
         for current in timestamps:
             if prev <= time < current:
-                return datetime.datetime.combine(
-                    today,
-                    current,
-                )
+                return datetime.datetime.combine(today, current, tzinfo=date.tzinfo)
             prev = current
 
         # Time is bigger than all timestamps. Use tomorrow's 1st timestamp.
         return datetime.datetime.combine(
-            today + datetime.timedelta(days=1),
-            timestamps[0],
+            today + datetime.timedelta(days=1), timestamps[0], tzinfo=date.tzinfo
         )

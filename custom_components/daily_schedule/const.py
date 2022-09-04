@@ -1,8 +1,14 @@
 """Constants for the Daily Schedule integration."""
-DOMAIN = "daily_schedule"
+import logging
+from typing import Final
 
-CONF_FROM = "from"
-CONF_TO = "to"
-CONF_SCHEDULE = "schedule"
+DOMAIN: Final = "daily_schedule"
+LOGGER = logging.getLogger(__package__)
 
-SERVICE_SET = "set"
+CONF_FROM: Final = "from"
+CONF_TO: Final = "to"
+CONF_SCHEDULE: Final = "schedule"
+
+ATTR_NEXT_UPDATE: Final = "next_update"
+
+SERVICE_SET: Final = "set"

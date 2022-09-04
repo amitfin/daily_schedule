@@ -205,18 +205,27 @@ def test_to_str() -> None:
 
 
 @pytest.mark.parametrize(
-    ["from_sec_offset", "to_sec_offset", "next_update_sec_offset"],
+    ["schedule", "next_update_sec_offset"],
     [
-        (-5, 5, 5),
-        (-10, -5, datetime.timedelta(days=1).total_seconds() - 10),
-        (5, 10, 5),
+        ([(-5, 5)], 5),
+        ([(-10, -5)], datetime.timedelta(days=1).total_seconds() - 10),
+        ([(5, 10)], 5),
+        ([(0, 0)], None),
+        ([(100, 200), (200, 100)], None),
+        ([(-100, 100), (100, 200)], 200),
     ],
-    ids=["inside range", "after all rangess", "before all ranges"],
+    ids=[
+        "inside range",
+        "after all rangess",
+        "before all ranges",
+        "entire_day_1_range",
+        "entire_day_2_ranges",
+        "adjusted_ranges",
+    ],
 )
 def test_next_update(
-    from_sec_offset: int,
-    to_sec_offset: int,
-    next_update_sec_offset: int,
+    schedule: list[(int, int)],
+    next_update_sec_offset: int | None,
 ) -> None:
     """Test next update logic."""
     now = datetime.datetime.fromisoformat("2000-01-01")
@@ -230,5 +239,10 @@ def test_next_update(
                 .time()
                 .isoformat(),
             }
+            for (from_sec_offset, to_sec_offset) in schedule
         ]
-    ).next_update(now) == now + datetime.timedelta(seconds=next_update_sec_offset)
+    ).next_update(now) == (
+        now + datetime.timedelta(seconds=next_update_sec_offset)
+        if next_update_sec_offset is not None
+        else None
+    )

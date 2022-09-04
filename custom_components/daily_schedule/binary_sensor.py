@@ -1,19 +1,20 @@
 """Support for representing daily schedule as binary sensors."""
 from __future__ import annotations
 
+from collections.abc import Callable, MutableMapping
 import datetime
 from typing import Any
 import voluptuous as vol
 
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import event as event_helper, entity_platform
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 import homeassistant.util.dt as dt_util
 
-from .const import CONF_FROM, CONF_SCHEDULE, CONF_TO, SERVICE_SET
+from .const import ATTR_NEXT_UPDATE, CONF_FROM, CONF_SCHEDULE, CONF_TO, SERVICE_SET
 from .schedule import Schedule
 
 
@@ -51,6 +52,8 @@ async def async_setup_entry(
 class DailyScheduleSenosr(BinarySensorEntity):
     """Representation of a daily schedule sensor."""
 
+    _attr_has_entity_name = True
+    _attr_should_poll = False
     _attr_icon = "mdi:timetable"
 
     def __init__(self, config_entry: ConfigEntry) -> None:
@@ -59,24 +62,15 @@ class DailyScheduleSenosr(BinarySensorEntity):
         self._attr_name = config_entry.title
         self._attr_unique_id = config_entry.entry_id
         self._schedule: Schedule = Schedule(config_entry.options.get(CONF_SCHEDULE, []))
-        self._unsub_update: CALLBACK_TYPE | None = None
-
-    @property
-    def should_poll(self) -> bool:
-        """No polling needed."""
-        return False
+        self._attr_extra_state_attributes: MutableMapping[str, Any] = {
+            CONF_SCHEDULE: self._schedule.to_list()
+        }
+        self._unsub_update: Callable[[], None] | None = None
 
     @property
     def is_on(self) -> bool:
         """Return True is sensor is on."""
         return self._schedule.containing(dt_util.now().time())
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        """Return the state attributes of the sensor."""
-        return {
-            CONF_SCHEDULE: self._schedule.to_list(),
-        }
 
     @callback
     def _clean_up_listener(self):
@@ -101,17 +95,15 @@ class DailyScheduleSenosr(BinarySensorEntity):
     def _schedule_update(self) -> None:
         """Schedule a timer for the point when the state should be changed."""
         self._clean_up_listener()
-
         next_update = self._schedule.next_update(dt_util.now())
-        if not next_update:
-            return
-
-        self._unsub_update = event_helper.async_track_point_in_time(
-            self.hass, self._update_state, next_update
-        )
+        self._attr_extra_state_attributes[ATTR_NEXT_UPDATE] = next_update
+        if next_update:
+            self._unsub_update = event_helper.async_track_point_in_time(
+                self.hass, self._update_state, next_update
+            )
 
     @callback
     def _update_state(self, *_):
         """Update the state to reflect the current time."""
-        self._schedule_update()
         self.async_write_ha_state()
+        self._schedule_update()
