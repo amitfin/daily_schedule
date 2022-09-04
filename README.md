@@ -76,7 +76,7 @@ If you want to contribute to this please read the [Contribution guidelines](CONT
 ***
 
 [hacs]: https://github.com/custom-components/hacs
-[hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge
+[hacsbadge]: https://img.shields.io/badge/HACS-Default-41BDF5.svg?style=for-the-badge
 [license-shield]: https://img.shields.io/github/license/amitfin/daily_schedule.svg?style=for-the-badge
 [maintenance-shield]: https://img.shields.io/badge/maintainer-Amit%20Finkelstein%20%40amitfin-blue.svg?style=for-the-badge
 [releases-shield]: https://img.shields.io/github/release/amitfin/daily_schedule.svg?style=for-the-badge

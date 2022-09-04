@@ -6,7 +6,7 @@
 	"appPort": [
 		"9123:8123"
 	],
-	"postCreateCommand": "container install",
+	"postCreateCommand": "python3 -m pip install -r requirements_test.txt && container install",
 	"extensions": [
 		"ms-python.python",
 		"github.vscode-pull-request-github",
