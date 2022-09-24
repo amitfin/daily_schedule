@@ -92,18 +92,14 @@ class DailyScheduleSenosr(BinarySensorEntity):
             options={CONF_SCHEDULE: Schedule(schedule).to_list()},
         )
 
-    def _schedule_update(self) -> None:
-        """Schedule a timer for the point when the state should be changed."""
+    @callback
+    def _update_state(self, *_) -> None:
+        """Update the state and schedule next update."""
         self._clean_up_listener()
         next_update = self._schedule.next_update(dt_util.now())
         self._attr_extra_state_attributes[ATTR_NEXT_UPDATE] = next_update
+        self.async_write_ha_state()
         if next_update:
             self._unsub_update = event_helper.async_track_point_in_time(
                 self.hass, self._update_state, next_update
             )
-
-    @callback
-    def _update_state(self, *_):
-        """Update the state to reflect the current time."""
-        self.async_write_ha_state()
-        self._schedule_update()
