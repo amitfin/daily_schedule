@@ -48,7 +48,7 @@ class Schedule:
 
     def _validate(self) -> None:
         """Validate the schedule."""
-        # Any schedule with zero or a single entry is valid.
+        # An empty schedule or a schedule with a single entry is always valid.
         if len(self._schedule) <= 1:
             return
 
@@ -79,8 +79,8 @@ class Schedule:
             # If it crosses the day boundary, check overlap with 1st range.
             if self._schedule[-1].end > self._schedule[0].start:
                 raise ValueError(
-                    f"'{self._schedule[i].to_str()}' overlaps "
-                    f"'{self._schedule[i + 1].to_str()}'."
+                    f"'{self._schedule[-1].to_str()}' overlaps "
+                    f"'{self._schedule[0].to_str()}'."
                 )
 
     def containing(self, time: datetime.time) -> bool:
@@ -100,12 +100,9 @@ class Schedule:
 
     def next_update(self, date: datetime.datetime) -> datetime.datetime | None:
         """Schedule a timer for the point when the state should be changed."""
-        if not self._schedule:
-            return None
-
         time = date.time()
-        today = date.date()
         prev = datetime.time()  # Midnight.
+        today = date.date()
 
         # Get ON and OFF timestamp sets.
         to_on = set(time_range.start for time_range in self._schedule)
