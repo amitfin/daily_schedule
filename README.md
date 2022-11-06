@@ -8,6 +8,8 @@
 
 The Daily Schedule integration provides a binary sensor that gets its ON/OFF state according to the user-defined schedule.
 
+_Note: There is an optional [lovelace card](https://github.com/amitfin/lovelace-daily-schedule-card) with an optimized view and simplyfied editing capabilities. It doesn't add functionality, but it improves the user experience._
+
 Below are video clips demoing  Daily Schedule usage:
 - [Create and modify](https://youtu.be/3cVtPPC3S4U)
 - [Automation rule](https://youtu.be/5toly_W7fUU)
