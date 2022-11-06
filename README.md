@@ -8,7 +8,7 @@
 
 The Daily Schedule integration provides a binary sensor that gets its ON/OFF state according to the user-defined schedule.
 
-_Note: There is an optional [lovelace card](https://github.com/amitfin/lovelace-daily-schedule-card) with an optimized view and simplyfied editing capabilities. It doesn't add functionality, but it improves the user experience._
+_Note: There is an optional [lovelace card](https://github.com/amitfin/lovelace-daily-schedule-card) with an optimized view and simplyfied editing capabilities. It doesn't add functionality, but it improves the user experience. To open the card installation page inside HACS click [here](https://my.home-assistant.io/redirect/hacs_repository/?owner=amitfin&repository=lovelace-daily-schedule-card&category=plugin)._
 
 Below are video clips demoing  Daily Schedule usage:
 - [Create and modify](https://youtu.be/3cVtPPC3S4U)
