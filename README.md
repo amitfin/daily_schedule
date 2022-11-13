@@ -1,10 +1,10 @@
 # Daily Schedule
 
-[![HACS Badge](https://img.shields.io/badge/HACS-Default-yellow.svg?style=for-the-badge)](https://github.com/hacs/integration)
+[![HACS Badge](https://img.shields.io/badge/HACS-Default-31A9F4.svg?style=for-the-badge)](https://github.com/hacs/integration)
 
 [![GitHub Release](https://img.shields.io/github/release/amitfin/daily_schedule.svg?style=for-the-badge&color=blue)](https://github.com/amitfin/daily_schedule/releases) ![Analytics](https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=blue&label=Analytics&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.daily_schedule.total)
 
-![Project Maintenance](https://img.shields.io/badge/maintainer-Amit%20Finkelstein%20%40amitfin-green.svg?style=for-the-badge)
+![Project Maintenance](https://img.shields.io/badge/maintainer-Amit%20Finkelstein-blue.svg?style=for-the-badge)
 
 The Daily Schedule integration provides a binary sensor that gets its ON/OFF state according to the user-defined schedule.
 
