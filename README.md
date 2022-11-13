@@ -1,10 +1,10 @@
 # Daily Schedule
 
-[![GitHub Release][releases-shield]][releases]
-[![License][license-shield]](LICENSE)
+[![HACS Badge](https://img.shields.io/badge/HACS-Default-yellow.svg?style=for-the-badge)](https://github.com/hacs/integration)
 
-[![hacs][hacsbadge]][hacs]
-![Project Maintenance][maintenance-shield]
+[![GitHub Release](https://img.shields.io/github/release/amitfin/daily_schedule.svg?style=for-the-badge&color=blue)](https://github.com/amitfin/daily_schedule/releases) ![Analytics](https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=blue&label=Analytics&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.daily_schedule.total)
+
+![Project Maintenance](https://img.shields.io/badge/maintainer-Amit%20Finkelstein%20%40amitfin-green.svg?style=for-the-badge)
 
 The Daily Schedule integration provides a binary sensor that gets its ON/OFF state according to the user-defined schedule.
 
@@ -74,15 +74,3 @@ The schedule can be saved only if it passes the following checks:
 ## Contributions are welcome!
 
 If you want to contribute to this please read the [Contribution guidelines](CONTRIBUTING.md)
-
-<!---->
-
-***
-
-[hacs]: https://github.com/custom-components/hacs
-[hacsbadge]: https://img.shields.io/badge/HACS-Default-41BDF5.svg?style=for-the-badge
-[license-shield]: https://img.shields.io/github/license/amitfin/daily_schedule.svg?style=for-the-badge
-[maintenance-shield]: https://img.shields.io/badge/maintainer-Amit%20Finkelstein%20%40amitfin-blue.svg?style=for-the-badge
-[releases-shield]: https://img.shields.io/github/release/amitfin/daily_schedule.svg?style=for-the-badge
-[releases]: https://github.com/amitfin/daily_schedule/releases
-
