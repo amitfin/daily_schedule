@@ -43,8 +43,15 @@ class Schedule:
             TimeRange(time_range[CONF_FROM], time_range[CONF_TO])
             for time_range in schedule
         ]
+        if not self._schedule:
+            return
         self._schedule.sort(key=lambda time_range: time_range.start)
         self._validate()
+        self._to_on = [time_range.start for time_range in self._schedule]
+        # Remove "on to on" transitions of adjusted time ranges (as state doesn't cahnge to off).
+        self._to_off = sorted(
+            set(time_range.end for time_range in self._schedule) - set(self._to_on)
+        )
 
     def _validate(self) -> None:
         """Validate the schedule."""
@@ -100,23 +107,17 @@ class Schedule:
 
     def next_update(self, date: datetime.datetime) -> datetime.datetime | None:
         """Schedule a timer for the point when the state should be changed."""
+        if not self._schedule:
+            return None
+
+        timestamps = self._to_off if self.containing(date.time()) else self._to_on
+        if not timestamps:
+            # If time ranges cover the entire day (the subtraction result is empty).
+            return None
+
         time = date.time()
         prev = datetime.time()  # Midnight.
         today = date.date()
-
-        # Get ON and OFF timestamp sets.
-        to_on = set(time_range.start for time_range in self._schedule)
-        to_off = set(time_range.end for time_range in self._schedule)
-
-        # Get the relevant set.
-        # Remove "on to on" transitions of adjusted time ranges (as state doesn't cahnge).
-        timestamps = (
-            sorted(to_off - to_on) if self.containing(date.time()) else sorted(to_on)
-        )
-
-        # If time ranges cover the entire day (the subtraction result is empty).
-        if not timestamps:
-            return None
 
         # Find the smallest timestamp which is bigger than time.
         for current in timestamps:
