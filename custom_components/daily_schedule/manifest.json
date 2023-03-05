@@ -1,14 +1,14 @@
 {
   "domain": "daily_schedule",
-  "integration_type": "helper",
   "name": "Daily Schedule",
-  "version": "1.4.3",
-  "documentation": "https://github.com/amitfin/daily_schedule",
-  "issue_tracker": "https://github.com/amitfin/daily_schedule/issues",
-  "quality_scale": "platinum",
   "codeowners": [
     "@amitfin"
   ],
+  "config_flow": true,
+  "documentation": "https://github.com/amitfin/daily_schedule",
+  "integration_type": "helper",
   "iot_class": "calculated",
-  "config_flow": true
+  "issue_tracker": "https://github.com/amitfin/daily_schedule/issues",
+  "quality_scale": "platinum",
+  "version": "1.4.3"
 }
