@@ -15,7 +15,7 @@ from pytest_homeassistant_custom_component.common import (
 )
 
 from custom_components.daily_schedule.const import (
-    ATTR_NEXT_UPDATE,
+    ATTR_NEXT_TOGGLE,
     CONF_FROM,
     CONF_SCHEDULE,
     CONF_TO,
@@ -173,7 +173,7 @@ async def test_entire_day(hass, schedule):
     entity_id = f"{Platform.BINARY_SENSOR}.my_test"
     await setup_entity(hass, "My Test", schedule)
     assert hass.states.get(entity_id).state == STATE_ON
-    assert not hass.states.get(entity_id).attributes[ATTR_NEXT_UPDATE]
+    assert not hass.states.get(entity_id).attributes[ATTR_NEXT_TOGGLE]
 
 
 @patch("homeassistant.util.dt.now")
@@ -205,7 +205,7 @@ async def test_next_update(async_track_point_in_time, mock_now, hass):
     next_update = async_track_point_in_time.call_args[0][2]
     assert next_update == in_5_minutes
     assert (
-        hass.states.get(f"{Platform.BINARY_SENSOR}.test1").attributes[ATTR_NEXT_UPDATE]
+        hass.states.get(f"{Platform.BINARY_SENSOR}.test1").attributes[ATTR_NEXT_TOGGLE]
         == in_5_minutes
     )
 
@@ -225,7 +225,7 @@ async def test_next_update(async_track_point_in_time, mock_now, hass):
     next_update = async_track_point_in_time.call_args[0][2]
     assert next_update == expected_next_update
     assert (
-        hass.states.get(f"{Platform.BINARY_SENSOR}.test2").attributes[ATTR_NEXT_UPDATE]
+        hass.states.get(f"{Platform.BINARY_SENSOR}.test2").attributes[ATTR_NEXT_TOGGLE]
         == expected_next_update
     )
 
@@ -244,7 +244,7 @@ async def test_next_update(async_track_point_in_time, mock_now, hass):
     next_update = async_track_point_in_time.call_args[0][2]
     assert next_update == in_5_minutes
     assert (
-        hass.states.get(f"{Platform.BINARY_SENSOR}.test3").attributes[ATTR_NEXT_UPDATE]
+        hass.states.get(f"{Platform.BINARY_SENSOR}.test3").attributes[ATTR_NEXT_TOGGLE]
         == in_5_minutes
     )
 

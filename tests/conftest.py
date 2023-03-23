@@ -16,6 +16,7 @@
 # pytest includes fixtures OOB which you can use as defined on this page)
 import pytest
 
+
 # This fixture enables loading custom integrations in all tests.
 # Remove to enable selective use of this fixture
 @pytest.fixture(autouse=True)

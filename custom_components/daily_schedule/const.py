@@ -9,6 +9,6 @@ CONF_FROM: Final = "from"
 CONF_TO: Final = "to"
 CONF_SCHEDULE: Final = "schedule"
 
-ATTR_NEXT_UPDATE: Final = "next_update"
+ATTR_NEXT_TOGGLE: Final = "next_toggle"
 
 SERVICE_SET: Final = "set"
