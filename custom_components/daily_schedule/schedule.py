@@ -50,7 +50,7 @@ class Schedule:
         self._to_on = [time_range.start for time_range in self._schedule]
         # Remove "on to on" transitions of adjusted time ranges (as state doesn't cahnge to off).
         self._to_off = sorted(
-            set(time_range.end for time_range in self._schedule) - set(self._to_on)
+            {time_range.end for time_range in self._schedule} - set(self._to_on)
         )
 
     def _validate(self) -> None:
