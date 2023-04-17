@@ -1,5 +1,7 @@
 {
     "name": "Daily Schedule",
+    "filename": "daily_schedule.zip",
+    "hide_default_branch": true,
     "render_readme": true,
-    "hide_default_branch": true
+    "zip_release": true
 }

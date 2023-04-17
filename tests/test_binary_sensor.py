@@ -38,6 +38,13 @@ async def setup_entity(
     await hass.async_block_till_done()
 
 
+async def async_clenaup(hass: HomeAssistant) -> None:
+    """Delete all config entries."""
+    for config_entry in hass.config_entries.async_entries(DOMAIN):
+        assert await hass.config_entries.async_unload(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+
 @pytest.mark.parametrize(
     ["schedule"],
     [
@@ -106,6 +113,7 @@ async def test_new_sensor(hass, schedule):
     await setup_entity(hass, "My Test", schedule)
     schedule.sort(key=lambda time_range: time_range[CONF_FROM])
     assert hass.states.get(entity_id).attributes[CONF_SCHEDULE] == schedule
+    await async_clenaup(hass)
 
 
 @patch("homeassistant.util.dt.now")
@@ -132,6 +140,8 @@ async def test_state(mock_now, hass):
         await hass.async_block_till_done()
         assert hass.states.get(entity_id).state == state
         state = STATE_ON if state == STATE_OFF else STATE_OFF
+
+    await async_clenaup(hass)
 
 
 @pytest.mark.parametrize(
@@ -247,6 +257,7 @@ async def test_next_update(async_track_point_in_time, mock_now, hass):
         hass.states.get(f"{Platform.BINARY_SENSOR}.test3").attributes[ATTR_NEXT_TOGGLE]
         == in_5_minutes
     )
+    await async_clenaup(hass)
 
 
 async def test_set(hass):
@@ -265,6 +276,7 @@ async def test_set(hass):
     )
     await hass.async_block_till_done()
     assert hass.states.get(entity_id).attributes[CONF_SCHEDULE] == schedule2
+    await async_clenaup(hass)
 
 
 @pytest.mark.parametrize(
@@ -309,3 +321,4 @@ async def test_invalid_set(hass, schedule):
             blocking=True,
         )
     assert "overlap" in str(excinfo.value)
+    await async_clenaup(hass)

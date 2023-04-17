@@ -97,6 +97,10 @@ async def test_config_flow_with_schedule(hass: HomeAssistant) -> None:
             {CONF_FROM: "15:00:00", CONF_TO: "20:00:00"},
         ]
     }
+    assert await hass.config_entries.async_unload(
+        hass.config_entries.async_entries(DOMAIN)[0].entry_id
+    )
+    await hass.async_block_till_done()
 
 
 async def test_config_flow_invalid_schedule(hass: HomeAssistant) -> None:
@@ -149,6 +153,8 @@ async def test_options_flow(hass: HomeAssistant) -> None:
             {CONF_FROM: "01:00:00", CONF_TO: "04:00:00"},
         ]
     }
+    assert await hass.config_entries.async_unload(config_entry.entry_id)
+    await hass.async_block_till_done()
 
 
 async def test_invalid_options_flow(hass: HomeAssistant) -> None:
@@ -174,3 +180,5 @@ async def test_invalid_options_flow(hass: HomeAssistant) -> None:
     )
     assert result2.get("type") == FlowResultType.FORM
     assert result2.get("errors")["base"] == "overlap"
+    assert await hass.config_entries.async_unload(config_entry.entry_id)
+    await hass.async_block_till_done()

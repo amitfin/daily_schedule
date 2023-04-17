@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+set -e
+
+cd "$(dirname "$0")/../config"
+
+# Start Home Assistant
+hass -c . --debug
