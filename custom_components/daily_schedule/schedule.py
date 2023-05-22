@@ -3,19 +3,28 @@ from __future__ import annotations
 
 import datetime
 
-from .const import CONF_FROM, CONF_TO
+from .const import CONF_DISABLED, CONF_FROM, CONF_TO
 
 
 class TimeRange:
     """Time range with start and end (since "from" is a reserved word)."""
 
-    def __init__(self, start: str, end: str) -> None:
+    def __init__(self, start: str, end: str, disabled: bool) -> None:
         """Initialize the object."""
         self.start: datetime.time = datetime.time.fromisoformat(start)
         self.end: datetime.time = datetime.time.fromisoformat(end)
+        self.disabled = disabled
+
+    @property
+    def enabled(self) -> bool:
+        """Return if time range is enabled."""
+        return not self.disabled
 
     def containing(self, time: datetime.time) -> bool:
         """Check if the time is inside the range."""
+        if self.disabled:
+            return False
+
         # If the range crosses the day boundary.
         if self.end <= self.start:
             return self.start <= time or time < self.end
@@ -25,8 +34,11 @@ class TimeRange:
     def to_dict(self) -> dict[str, str]:
         """Serialize the object as a dict."""
         return {
-            CONF_FROM: self.start.isoformat(),
-            CONF_TO: self.end.isoformat(),
+            **{
+                CONF_FROM: self.start.isoformat(),
+                CONF_TO: self.end.isoformat(),
+            },
+            **({CONF_DISABLED: True} if self.disabled else {}),
         }
 
     def to_str(self) -> str:
@@ -40,17 +52,24 @@ class Schedule:
     def __init__(self, schedule: list[dict[str, str]]) -> None:
         """Create a list of TimeRanges representing the schedule."""
         self._schedule = [
-            TimeRange(time_range[CONF_FROM], time_range[CONF_TO])
+            TimeRange(
+                time_range[CONF_FROM],
+                time_range[CONF_TO],
+                time_range.get(CONF_DISABLED, False),
+            )
             for time_range in schedule
         ]
         if not self._schedule:
             return
         self._schedule.sort(key=lambda time_range: time_range.start)
         self._validate()
-        self._to_on = [time_range.start for time_range in self._schedule]
+        self._to_on = [
+            time_range.start for time_range in self._schedule if time_range.enabled
+        ]
         # Remove "on to on" transitions of adjusted time ranges (as state doesn't cahnge to off).
         self._to_off = sorted(
-            {time_range.end for time_range in self._schedule} - set(self._to_on)
+            {time_range.end for time_range in self._schedule if time_range.enabled}
+            - set(self._to_on)
         )
 
     def _validate(self) -> None:
@@ -61,7 +80,6 @@ class Schedule:
 
         # Check all except the last time range of the schedule.
         for i in range(len(self._schedule) - 1):
-
             # The end time should be greater than the start time.
             if not self._schedule[i].end > self._schedule[i].start:
                 raise ValueError(
@@ -100,10 +118,6 @@ class Schedule:
     def to_list(self) -> list[dict[str, str]]:
         """Serialize the object as a list."""
         return [time_range.to_dict() for time_range in self._schedule]
-
-    def to_str(self) -> str:
-        """Serialize the object as a string."""
-        return ", ".join([time_range.to_str() for time_range in self._schedule])
 
     def next_update(self, date: datetime.datetime) -> datetime.datetime | None:
         """Schedule a timer for the point when the state should be changed."""

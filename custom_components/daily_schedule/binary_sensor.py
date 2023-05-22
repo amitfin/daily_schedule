@@ -14,7 +14,14 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 import homeassistant.util.dt as dt_util
 
-from .const import ATTR_NEXT_TOGGLE, CONF_FROM, CONF_SCHEDULE, CONF_TO, SERVICE_SET
+from .const import (
+    ATTR_NEXT_TOGGLE,
+    CONF_DISABLED,
+    CONF_FROM,
+    CONF_SCHEDULE,
+    CONF_TO,
+    SERVICE_SET,
+)
 from .schedule import Schedule
 
 
@@ -27,6 +34,7 @@ ENTRY_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_FROM): vol.All(cv.time, remove_micros_and_tz),
         vol.Required(CONF_TO): vol.All(cv.time, remove_micros_and_tz),
+        vol.Optional(CONF_DISABLED): cv.boolean,
     },
     extra=vol.ALLOW_EXTRA,
 )
