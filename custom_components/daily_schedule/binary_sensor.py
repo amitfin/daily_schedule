@@ -20,6 +20,7 @@ from .const import (
     CONF_FROM,
     CONF_SCHEDULE,
     CONF_TO,
+    CONF_UTC,
     SERVICE_SET,
 )
 from .schedule import Schedule
@@ -73,12 +74,17 @@ class DailyScheduleSenosr(BinarySensorEntity):
         self._attr_extra_state_attributes: MutableMapping[str, Any] = {
             CONF_SCHEDULE: self._schedule.to_list()
         }
+        self._utc = config_entry.options.get(CONF_UTC, False)
         self._unsub_update: Callable[[], None] | None = None
+
+    def _now(self) -> datetime.datetime:
+        """Return the current time either as local or UTC, based on configuration."""
+        return dt_util.now() if not self._utc else dt_util.utcnow()
 
     @property
     def is_on(self) -> bool:
         """Return True is sensor is on."""
-        return self._schedule.containing(dt_util.now().time())
+        return self._schedule.containing(self._now().time())
 
     @callback
     def _clean_up_listener(self):
@@ -104,7 +110,7 @@ class DailyScheduleSenosr(BinarySensorEntity):
     def _update_state(self, *_) -> None:
         """Update the state and schedule next update."""
         self._clean_up_listener()
-        next_update = self._schedule.next_update(dt_util.now())
+        next_update = self._schedule.next_update(self._now())
         self._attr_extra_state_attributes[ATTR_NEXT_TOGGLE] = next_update
         self.async_write_ha_state()
         if next_update:

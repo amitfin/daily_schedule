@@ -12,7 +12,7 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 import homeassistant.helpers.config_validation as cv
 
-from .const import CONF_FROM, CONF_SCHEDULE, CONF_TO, DOMAIN
+from .const import CONF_FROM, CONF_SCHEDULE, CONF_TO, CONF_UTC, DOMAIN
 from .schedule import Schedule
 
 ADD_RANGE = "add_range"
@@ -22,6 +22,7 @@ CONFIG_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_NAME): selector.TextSelector(),
         vol.Required(ADD_RANGE, default=True): selector.BooleanSelector(),
+        vol.Required(CONF_UTC, default=False): selector.BooleanSelector(),
     }
 )
 CONFIG_RANGE = vol.Schema(
@@ -33,8 +34,9 @@ CONFIG_RANGE = vol.Schema(
 )
 OPTIONS_SCHEMA = vol.Schema(
     {
-        vol.Optional(CONF_FROM, default="00:00:00"): selector.TimeSelector(),
-        vol.Optional(CONF_TO, default="00:00:00"): selector.TimeSelector(),
+        vol.Required(ADD_RANGE, default=False): cv.boolean,
+        vol.Required(CONF_FROM, default="00:00:00"): selector.TimeSelector(),
+        vol.Required(CONF_TO, default="00:00:00"): selector.TimeSelector(),
     }
 )
 
@@ -64,14 +66,15 @@ class DailyScheduleConfigFlow(ConfigFlow, domain=DOMAIN):
 
             if not errors:
 
-                if user_input.get(ADD_RANGE, False):
+                if user_input[ADD_RANGE]:
                     self.options[CONF_NAME] = user_input[CONF_NAME]
+                    self.options[CONF_UTC] = user_input[CONF_UTC]
                     return await self.async_step_time_range()
 
                 return self.async_create_entry(
                     title=user_input[CONF_NAME],
                     data={},
-                    options={CONF_SCHEDULE: []},
+                    options={CONF_SCHEDULE: [], CONF_UTC: user_input[CONF_UTC]},
                 )
 
         return self.async_show_form(
@@ -99,13 +102,16 @@ class DailyScheduleConfigFlow(ConfigFlow, domain=DOMAIN):
             if not errors:
                 self.options[CONF_SCHEDULE] = schedule.to_list()
 
-                if user_input.get(ADD_RANGE, False):
+                if user_input[ADD_RANGE]:
                     return await self.async_step_time_range()
 
                 return self.async_create_entry(
                     title=self.options[CONF_NAME],
                     data={},
-                    options={CONF_SCHEDULE: self.options[CONF_SCHEDULE]},
+                    options={
+                        CONF_SCHEDULE: self.options[CONF_SCHEDULE],
+                        CONF_UTC: self.options[CONF_UTC]
+                    },
                 )
 
         return self.async_show_form(
@@ -142,7 +148,7 @@ class OptionsFlowHandler(OptionsFlow):
             ]
 
             # Add the additional time range.
-            if user_input.get(ADD_RANGE, True):
+            if user_input[ADD_RANGE]:
                 time_ranges.append(
                     {
                         CONF_FROM: user_input.get(CONF_FROM, "00:00:00"),
@@ -158,7 +164,10 @@ class OptionsFlowHandler(OptionsFlow):
             if not errors:
                 return self.async_create_entry(
                     title="",
-                    data={CONF_SCHEDULE: schedule.to_list()},
+                    data={
+                        CONF_SCHEDULE: schedule.to_list(),
+                        CONF_UTC: user_input[CONF_UTC],
+                    },
                 )
 
         time_ranges = [
@@ -171,10 +180,14 @@ class OptionsFlowHandler(OptionsFlow):
                     vol.Required(CONF_SCHEDULE, default=time_ranges): cv.multi_select(
                         time_ranges
                     ),
-                    vol.Required(ADD_RANGE, default=False): cv.boolean,
                 }
             ).extend(OPTIONS_SCHEMA.schema)
         else:
             schema = OPTIONS_SCHEMA
+
+        conf_utc = self.config_entry.options.get(CONF_UTC, False)
+        schema = schema.extend(vol.Schema({
+            vol.Required(CONF_UTC, default=conf_utc): selector.BooleanSelector(),
+        }).schema)
 
         return self.async_show_form(step_id="init", data_schema=schema, errors=errors)

@@ -9,6 +9,7 @@ CONF_DISABLED = "disabled"
 CONF_FROM: Final = "from"
 CONF_TO: Final = "to"
 CONF_SCHEDULE: Final = "schedule"
+CONF_UTC: Final = "utc"
 
 ATTR_NEXT_TOGGLE: Final = "next_toggle"
 

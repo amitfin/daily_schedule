@@ -4,7 +4,9 @@ from __future__ import annotations
 import datetime
 from unittest.mock import patch
 
+from freezegun.api import FrozenDateTimeFactory
 import pytest
+import pytz
 
 from homeassistant.const import ATTR_ENTITY_ID, STATE_OFF, STATE_ON, Platform
 from homeassistant.core import HomeAssistant
@@ -19,17 +21,18 @@ from custom_components.daily_schedule.const import (
     CONF_FROM,
     CONF_SCHEDULE,
     CONF_TO,
+    CONF_UTC,
     DOMAIN,
     SERVICE_SET,
 )
 
 
 async def setup_entity(
-    hass: HomeAssistant, name: str, schedule: list[dict[str, str]]
+    hass: HomeAssistant, name: str, schedule: list[dict[str, str]], utc: bool = False
 ) -> None:
     """Create a new entity by adding a config entry."""
     config_entry = MockConfigEntry(
-        options={CONF_SCHEDULE: schedule},
+        options={CONF_SCHEDULE: schedule, CONF_UTC: utc},
         domain=DOMAIN,
         title=name,
     )
@@ -321,4 +324,32 @@ async def test_invalid_set(hass, schedule):
             blocking=True,
         )
     assert "overlap" in str(excinfo.value)
+    await async_clenaup(hass)
+
+@pytest.mark.parametrize(
+    ["utc"],
+    [(True,), (False,)],
+    ids=["utc", "local"],
+)
+async def test_utc(hass, freezer: FrozenDateTimeFactory, utc: bool):
+    """Test utc schedule."""
+    utc_time = datetime.datetime(2023, 5, 30, 12, tzinfo=pytz.utc)  # 12pm
+    local_time = utc_time.astimezone(pytz.timezone('US/Eastern'))  # 7am
+    offset = utc_time.timestamp() - local_time.replace(tzinfo=None).timestamp()  # 5h
+    freezer.move_to(local_time)
+    entity_id = f"{Platform.BINARY_SENSOR}.my_test"
+    await setup_entity(
+        hass,
+        "My Test",
+        [
+            {
+                CONF_FROM: "12:00:00",
+                CONF_TO: "12:00:01",
+            },
+        ],
+        utc,
+    )
+    assert hass.states.get(entity_id).state == STATE_ON if utc else STATE_OFF
+    next_toogle_timestamp = hass.states.get(entity_id).attributes[ATTR_NEXT_TOGGLE].timestamp()
+    assert next_toogle_timestamp == utc_time.timestamp() + 1 if utc else offset
     await async_clenaup(hass)
