@@ -71,6 +71,23 @@ The schedule can be saved only if it passes the following checks:
 3. The TO of the latest time range (in the day) can be smaller or equal to its FROM, and it will be treated as a time in the following day.
     - This means that the binary sensor will be always ON when there is a single time range with the same FROM and TO.
 
+## Additional Cards
+
+[Timer Bar Card](https://github.com/rianadon/timer-bar-card) supports this integration. ```end_time``` must be configured as follow:
+```
+end_time:
+  attribute: next_toggle
+```
+By default it countdowns the time till the end of the current time range. ```active_state``` can be used for counting down the time to the beginning of the next range (instead):
+```
+active_state: 'off'
+```
+
+### UTC Option
+
+When UTC option is set (not the default), the time should be expressed in [UTC](https://en.wikipedia.org/wiki/Coordinated_Universal_Time) instead of local time. This option can be used when absolute time is needed, which is not impacted by daylight saving changes throughout the year.
+This is an advanced option that should not be used in the majority of the use cases. It should be used only if there is a very concrete reason to do so.
+
 ## Contributions are welcome!
 
 If you want to contribute to this please read the [Contribution guidelines](CONTRIBUTING.md)
