@@ -70,6 +70,26 @@ The schedule can be saved only if it passes the following checks:
 2. Time ranges can’t overlap but can adjust.
 3. The TO of the latest time range (in the day) can be smaller or equal to its FROM, and it will be treated as a time in the following day.
     - This means that the binary sensor will be always ON when there is a single time range with the same FROM and TO.
+  
+## Sun-based Schedule
+
+It is not possible to directly set a time range using sun-based times, such as sunrise or sunset. However, below is a daily automation rule that demonstrates how it can be achieved:
+```
+- trigger:
+    - platform: time
+      at: "01:23"
+  action:
+    - variables:
+        sunset_minus_30: >-
+          {{ ((states('sensor.sun_next_setting') | as_datetime ) - timedelta(minutes=30)) 
+          | as_timestamp | timestamp_custom('%H:%M:%S') }}
+    - service: daily_schedule.set
+      data:
+        entity_id: binary_sensor.front_yard_lights
+        schedule:
+          - from: "{{ sunset_minus_30 }}"
+            to: "00:00:00"
+```
 
 ## Additional Cards
 
