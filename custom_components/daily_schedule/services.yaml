@@ -1,4 +1,5 @@
 set:
+  name: Set
   description: Set the schedule.
   fields:
     entity_id:
