@@ -1,0 +1,21 @@
+name: "Speller"
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    branches:
+      - "main"
+
+jobs:
+  speller:
+    name: "Spell Check"
+    runs-on: "ubuntu-latest"
+    steps:
+        - name: "Checkout the repository"
+          uses: "actions/checkout@v4.1.1"
+
+        - name: "Run"
+          uses: streetsidesoftware/cspell-action@v5.1.0
