@@ -12,6 +12,8 @@
         "autouse",
         "freezegun",
         "pytz",
-        "excinfo"
+        "excinfo",
+        "HACS",
+        "timedelta"
     ]
 }

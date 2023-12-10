@@ -26,3 +26,8 @@ jobs:
               .*
               !**/translations/*.json
               **/translations/en.json
+              !.devcontainer.json
+              !.gitignore
+              !.ruff.toml
+              !LICENSE
+              !pytest.ini
