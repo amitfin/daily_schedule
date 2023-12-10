@@ -53,12 +53,12 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Initialize config entry."""
-    async_add_entities([DailyScheduleSenosr(config_entry)])
+    async_add_entities([DailyScheduleSensor(config_entry)])
     platform = entity_platform.async_get_current_platform()
     platform.async_register_entity_service(SERVICE_SET, SERVICE_SET_SCHEMA, "async_set")
 
 
-class DailyScheduleSenosr(BinarySensorEntity):
+class DailyScheduleSensor(BinarySensorEntity):
     """Representation of a daily schedule sensor."""
 
     _attr_has_entity_name = True

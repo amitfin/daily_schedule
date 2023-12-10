@@ -27,7 +27,7 @@ from custom_components.daily_schedule.schedule import Schedule, TimeRange
         "cross day morning",
         "cross day not contained",
         "entire day",
-        "entire day diabled",
+        "entire day disabled",
     ],
 )
 def test_time_range(start: str, end: str, time: str, disabled: bool, result: bool):
@@ -155,7 +155,7 @@ def test_schedule_containing(schedule: list[dict[str, str]], time: str, result: 
             "overlap",
         ),
     ],
-    ids=["zero length", "negative lenght", "overlap", "overnight_overlap"],
+    ids=["zero length", "negative length", "overlap", "overnight_overlap"],
 )
 def test_invalid(schedule: list[dict[str, str]], reason: str):
     """Test invalid schedule."""
@@ -211,7 +211,7 @@ def test_to_list(schedule: list[dict[str, str]]) -> None:
     ],
     ids=[
         "inside range",
-        "after all rangess",
+        "after all ranges",
         "before all ranges",
         "entire_day_1_range",
         "entire_day_2_ranges",

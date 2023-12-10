@@ -41,7 +41,7 @@ async def setup_entity(
     await hass.async_block_till_done()
 
 
-async def async_clenaup(hass: HomeAssistant) -> None:
+async def async_cleanup(hass: HomeAssistant) -> None:
     """Delete all config entries."""
     for config_entry in hass.config_entries.async_entries(DOMAIN):
         assert await hass.config_entries.async_unload(config_entry.entry_id)
@@ -116,7 +116,7 @@ async def test_new_sensor(hass, schedule):
     await setup_entity(hass, "My Test", schedule)
     schedule.sort(key=lambda time_range: time_range[CONF_FROM])
     assert hass.states.get(entity_id).attributes[CONF_SCHEDULE] == schedule
-    await async_clenaup(hass)
+    await async_cleanup(hass)
 
 
 @patch("homeassistant.util.dt.now")
@@ -144,7 +144,7 @@ async def test_state(mock_now, hass):
         assert hass.states.get(entity_id).state == state
         state = STATE_ON if state == STATE_OFF else STATE_OFF
 
-    await async_clenaup(hass)
+    await async_cleanup(hass)
 
 
 @pytest.mark.parametrize(
@@ -260,7 +260,7 @@ async def test_next_update(async_track_point_in_time, mock_now, hass):
         hass.states.get(f"{Platform.BINARY_SENSOR}.test3").attributes[ATTR_NEXT_TOGGLE]
         == in_5_minutes
     )
-    await async_clenaup(hass)
+    await async_cleanup(hass)
 
 
 async def test_set(hass):
@@ -279,7 +279,7 @@ async def test_set(hass):
     )
     await hass.async_block_till_done()
     assert hass.states.get(entity_id).attributes[CONF_SCHEDULE] == schedule2
-    await async_clenaup(hass)
+    await async_cleanup(hass)
 
 
 @pytest.mark.parametrize(
@@ -324,7 +324,8 @@ async def test_invalid_set(hass, schedule):
             blocking=True,
         )
     assert "overlap" in str(excinfo.value)
-    await async_clenaup(hass)
+    await async_cleanup(hass)
+
 
 @pytest.mark.parametrize(
     ["utc"],
@@ -334,7 +335,7 @@ async def test_invalid_set(hass, schedule):
 async def test_utc(hass, freezer: FrozenDateTimeFactory, utc: bool):
     """Test utc schedule."""
     utc_time = datetime.datetime(2023, 5, 30, 12, tzinfo=pytz.utc)  # 12pm
-    local_time = utc_time.astimezone(pytz.timezone('US/Eastern'))  # 7am
+    local_time = utc_time.astimezone(pytz.timezone("US/Eastern"))  # 7am
     offset = utc_time.timestamp() - local_time.replace(tzinfo=None).timestamp()  # 5h
     freezer.move_to(local_time)
     entity_id = f"{Platform.BINARY_SENSOR}.my_test"
@@ -350,6 +351,8 @@ async def test_utc(hass, freezer: FrozenDateTimeFactory, utc: bool):
         utc,
     )
     assert hass.states.get(entity_id).state == STATE_ON if utc else STATE_OFF
-    next_toogle_timestamp = hass.states.get(entity_id).attributes[ATTR_NEXT_TOGGLE].timestamp()
-    assert next_toogle_timestamp == utc_time.timestamp() + 1 if utc else offset
-    await async_clenaup(hass)
+    next_toggle_timestamp = (
+        hass.states.get(entity_id).attributes[ATTR_NEXT_TOGGLE].timestamp()
+    )
+    assert next_toggle_timestamp == utc_time.timestamp() + 1 if utc else offset
+    await async_cleanup(hass)
