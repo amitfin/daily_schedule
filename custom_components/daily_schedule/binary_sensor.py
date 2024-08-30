@@ -1,4 +1,5 @@
 """Support for representing daily schedule as binary sensors."""
+
 from __future__ import annotations
 
 from collections.abc import Callable, MutableMapping
@@ -39,7 +40,7 @@ ENTRY_SCHEMA = vol.Schema(
     },
     extra=vol.ALLOW_EXTRA,
 )
-SERVICE_SET_SCHEMA = vol.Schema(
+SERVICE_SET_SCHEMA = cv.make_entity_service_schema(
     {
         vol.Required(CONF_SCHEDULE): vol.All(cv.ensure_list, [ENTRY_SCHEMA]),
     },
