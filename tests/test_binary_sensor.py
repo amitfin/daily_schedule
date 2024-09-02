@@ -1,4 +1,5 @@
 """The tests for the daily schedule sensor component."""
+
 from __future__ import annotations
 
 import datetime
@@ -275,7 +276,8 @@ async def test_set(hass):
     await hass.services.async_call(
         DOMAIN,
         SERVICE_SET,
-        {ATTR_ENTITY_ID: entity_id, CONF_SCHEDULE: schedule2},
+        {CONF_SCHEDULE: schedule2},
+        target={ATTR_ENTITY_ID: entity_id},
     )
     await hass.async_block_till_done()
     assert hass.states.get(entity_id).attributes[CONF_SCHEDULE] == schedule2
