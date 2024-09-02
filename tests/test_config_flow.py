@@ -1,11 +1,12 @@
 """Tests for the Daily Schedule config flow."""
+
 from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from homeassistant.config_entries import SOURCE_USER
 from homeassistant.const import CONF_NAME
-from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
-
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.daily_schedule.config_flow import (
@@ -19,6 +20,9 @@ from custom_components.daily_schedule.const import (
     CONF_UTC,
     DOMAIN,
 )
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
 
 
 async def test_config_flow_no_schedule(hass: HomeAssistant) -> None:
@@ -62,7 +66,7 @@ async def test_config_flow_duplicated(hass: HomeAssistant) -> None:
         user_input={CONF_NAME: name, ADD_RANGE: False},
     )
     assert result2.get("type") == FlowResultType.FORM
-    assert result2.get("errors")["base"] == "duplicated"
+    assert (result2.get("errors") or {}).get("base") == "duplicated"
 
 
 async def test_config_flow_with_schedule(hass: HomeAssistant) -> None:
@@ -125,7 +129,7 @@ async def test_config_flow_invalid_schedule(hass: HomeAssistant) -> None:
     )
     assert result2.get("type") == FlowResultType.FORM
     assert result2.get("step_id") == "time_range"
-    assert result2.get("errors")["base"] == "overlap"
+    assert (result2.get("errors") or {}).get("base") == "overlap"
 
 
 async def test_options_flow(hass: HomeAssistant) -> None:
@@ -183,9 +187,10 @@ async def test_invalid_options_flow(hass: HomeAssistant) -> None:
         },
     )
     assert result2.get("type") == FlowResultType.FORM
-    assert result2.get("errors")["base"] == "overlap"
+    assert (result2.get("errors") or {}).get("base") == "overlap"
     assert await hass.config_entries.async_unload(config_entry.entry_id)
     await hass.async_block_till_done()
+
 
 async def test_utc(hass: HomeAssistant) -> None:
     """Test UTC."""

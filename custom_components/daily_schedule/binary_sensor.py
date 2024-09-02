@@ -2,18 +2,15 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, MutableMapping
-import datetime
-from typing import Any
-import voluptuous as vol
+from typing import TYPE_CHECKING, Any
 
-from homeassistant.components.binary_sensor import BinarySensorEntity
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import event as event_helper, entity_platform
 import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
 import homeassistant.util.dt as dt_util
+import voluptuous as vol
+from homeassistant.components.binary_sensor import BinarySensorEntity
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_platform
+from homeassistant.helpers import event as event_helper
 
 from .const import (
     ATTR_NEXT_TOGGLE,
@@ -25,6 +22,13 @@ from .const import (
     SERVICE_SET,
 )
 from .schedule import Schedule
+
+if TYPE_CHECKING:
+    import datetime
+    from collections.abc import Callable, MutableMapping
+
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 
 def remove_micros_and_tz(time: datetime.time) -> str:
@@ -88,7 +92,7 @@ class DailyScheduleSensor(BinarySensorEntity):
         return self._schedule.containing(self._now().time())
 
     @callback
-    def _clean_up_listener(self):
+    def _clean_up_listener(self) -> None:
         """Remove the update timer."""
         if self._unsub_update is not None:
             self._unsub_update()
@@ -100,15 +104,15 @@ class DailyScheduleSensor(BinarySensorEntity):
         self.async_on_remove(self._clean_up_listener)
         self._update_state()
 
-    async def async_set(self, schedule: list[dict[str, str]]) -> None:
-        """Update the config entry with the new list. Required for non-admin use cases."""
+    async def async_set(self, schedule: list[dict[str, Any]]) -> None:
+        """Update the config entry with the new list (non-admin support)."""
         self.hass.config_entries.async_update_entry(
             self._config_entry,
             options={CONF_SCHEDULE: Schedule(schedule).to_list()},
         )
 
     @callback
-    def _update_state(self, *_) -> None:
+    def _update_state(self, _: datetime.datetime | None = None) -> None:
         """Update the state and schedule next update."""
         self._clean_up_listener()
         next_update = self._schedule.next_update(self._now())

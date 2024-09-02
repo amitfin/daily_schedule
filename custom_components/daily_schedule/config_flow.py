@@ -1,19 +1,25 @@
 """Config flow for daily schedule integration."""
+
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
-
-from homeassistant.config_entries import ConfigEntry, ConfigFlow, OptionsFlow
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow,
+    OptionsFlow,
+)
 from homeassistant.const import CONF_NAME
 from homeassistant.core import callback
-from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
-import homeassistant.helpers.config_validation as cv
 
 from .const import CONF_FROM, CONF_SCHEDULE, CONF_TO, CONF_UTC, DOMAIN
 from .schedule import Schedule
+
+if TYPE_CHECKING:
+    from homeassistant.data_entry_flow import FlowResult
 
 ADD_RANGE = "add_range"
 RANGE_DELIMITER = " - "
@@ -44,7 +50,7 @@ OPTIONS_SCHEMA = vol.Schema(
 class DailyScheduleConfigFlow(ConfigFlow, domain=DOMAIN):
     """Config flow."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize a new flow."""
         self.options: dict[str, Any] = {CONF_SCHEDULE: []}
 
@@ -55,7 +61,6 @@ class DailyScheduleConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-
             # Verify uniqueness of the name (used as the key).
             duplicated = filter(
                 lambda entry: entry.title == user_input[CONF_NAME],
@@ -65,7 +70,6 @@ class DailyScheduleConfigFlow(ConfigFlow, domain=DOMAIN):
                 errors["base"] = "duplicated"
 
             if not errors:
-
                 if user_input[ADD_RANGE]:
                     self.options[CONF_NAME] = user_input[CONF_NAME]
                     self.options[CONF_UTC] = user_input[CONF_UTC]
@@ -88,7 +92,6 @@ class DailyScheduleConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-
             # Validate the new schedule.
             time_ranges = self.options[CONF_SCHEDULE].copy()
             time_ranges.append(
@@ -110,7 +113,7 @@ class DailyScheduleConfigFlow(ConfigFlow, domain=DOMAIN):
                     data={},
                     options={
                         CONF_SCHEDULE: self.options[CONF_SCHEDULE],
-                        CONF_UTC: self.options[CONF_UTC]
+                        CONF_UTC: self.options[CONF_UTC],
                     },
                 )
 
@@ -137,7 +140,6 @@ class OptionsFlowHandler(OptionsFlow):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-
             # Get all time ranges except for the ones which were unchecked by the user.
             time_ranges = [
                 {
@@ -186,8 +188,14 @@ class OptionsFlowHandler(OptionsFlow):
             schema = OPTIONS_SCHEMA
 
         conf_utc = self.config_entry.options.get(CONF_UTC, False)
-        schema = schema.extend(vol.Schema({
-            vol.Required(CONF_UTC, default=conf_utc): selector.BooleanSelector(),
-        }).schema)
+        schema = schema.extend(
+            vol.Schema(
+                {
+                    vol.Required(
+                        CONF_UTC, default=conf_utc
+                    ): selector.BooleanSelector(),
+                }
+            ).schema
+        )
 
         return self.async_show_form(step_id="init", data_schema=schema, errors=errors)

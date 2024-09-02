@@ -1,12 +1,12 @@
 """Tests for the diagnostics data."""
 
+from __future__ import annotations
+
 from http import HTTPStatus
+from typing import TYPE_CHECKING
 
-from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
-
 from pytest_homeassistant_custom_component.common import MockConfigEntry
-from pytest_homeassistant_custom_component.typing import ClientSessionGenerator
 
 from custom_components.daily_schedule.const import (
     CONF_FROM,
@@ -15,6 +15,10 @@ from custom_components.daily_schedule.const import (
     CONF_UTC,
     DOMAIN,
 )
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
+    from pytest_homeassistant_custom_component.typing import ClientSessionGenerator
 
 
 async def test_diagnostics(

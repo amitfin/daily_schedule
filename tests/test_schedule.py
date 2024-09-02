@@ -1,16 +1,18 @@
 """The tests for the schedule class."""
+
 from __future__ import annotations
 
 import datetime
+from typing import Any
 
 import pytest
 
-from custom_components.daily_schedule.const import CONF_DISABLED, CONF_TO, CONF_FROM
+from custom_components.daily_schedule.const import CONF_DISABLED, CONF_FROM, CONF_TO
 from custom_components.daily_schedule.schedule import Schedule, TimeRange
 
 
 @pytest.mark.parametrize(
-    ["start", "end", "time", "disabled", "result"],
+    ("start", "end", "time", "disabled", "result"),
     [
         ("05:00", "10:00", "05:00", False, True),
         ("05:00", "10:00", "10:00", False, False),
@@ -30,7 +32,13 @@ from custom_components.daily_schedule.schedule import Schedule, TimeRange
         "entire day disabled",
     ],
 )
-def test_time_range(start: str, end: str, time: str, disabled: bool, result: bool):
+def test_time_range(
+    start: str,
+    end: str,
+    time: str,
+    disabled: bool,  # noqa: FBT001
+    result: bool,  # noqa: FBT001
+) -> None:
     """Test for TimeRange class."""
     assert (
         TimeRange(start, end, disabled).containing(datetime.time.fromisoformat(time))
@@ -39,13 +47,11 @@ def test_time_range(start: str, end: str, time: str, disabled: bool, result: boo
 
 
 @pytest.mark.parametrize(
+    "param",
     [
-        "param",
-    ],
-    [
-        ({CONF_FROM: "05:00:00", CONF_TO: "10:00:00"},),
-        ({CONF_FROM: "10:00:00", CONF_TO: "05:00:00", CONF_DISABLED: True},),
-        ({CONF_FROM: "05:00:00", CONF_TO: "05:00:00"},),
+        {CONF_FROM: "05:00:00", CONF_TO: "10:00:00"},
+        {CONF_FROM: "10:00:00", CONF_TO: "05:00:00", CONF_DISABLED: True},
+        {CONF_FROM: "05:00:00", CONF_TO: "05:00:00"},
     ],
     ids=[
         "regular",
@@ -53,7 +59,7 @@ def test_time_range(start: str, end: str, time: str, disabled: bool, result: boo
         "entire day",
     ],
 )
-def test_time_range_to_dict(param: dict[str, str]):
+def test_time_range_to_dict(param: dict[str, Any]) -> None:
     """Test TimeRange to_dict."""
     assert (
         TimeRange(
@@ -64,7 +70,7 @@ def test_time_range_to_dict(param: dict[str, str]):
 
 
 @pytest.mark.parametrize(
-    ["schedule", "time", "result"],
+    ("schedule", "time", "result"),
     [
         ([], "05:00", False),
         ([{CONF_FROM: "05:00", CONF_TO: "10:00"}], "05:00", True),
@@ -87,13 +93,17 @@ def test_time_range_to_dict(param: dict[str, str]):
         "disabled range",
     ],
 )
-def test_schedule_containing(schedule: list[dict[str, str]], time: str, result: bool):
+def test_schedule_containing(
+    schedule: list[dict[str, Any]],
+    time: str,
+    result: bool,  # noqa: FBT001
+) -> None:
     """Test containing method of Schedule."""
     assert Schedule(schedule).containing(datetime.time.fromisoformat(time)) is result
 
 
 @pytest.mark.parametrize(
-    ["schedule", "reason"],
+    ("schedule", "reason"),
     [
         (
             [
@@ -157,41 +167,37 @@ def test_schedule_containing(schedule: list[dict[str, str]], time: str, result: 
     ],
     ids=["zero length", "negative length", "overlap", "overnight_overlap"],
 )
-def test_invalid(schedule: list[dict[str, str]], reason: str):
+def test_invalid(schedule: list[dict[str, Any]], reason: str) -> None:
     """Test invalid schedule."""
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(ValueError) as excinfo:  # noqa: PT011
         Schedule(schedule)
     assert reason in str(excinfo.value)
 
 
 @pytest.mark.parametrize(
-    ["schedule"],
+    "schedule",
     [
-        (
-            [
-                {
-                    CONF_FROM: "01:00:00",
-                    CONF_TO: "02:00:00",
-                },
-            ],
-        ),
-        (
-            [
-                {
-                    CONF_FROM: "03:00:00",
-                    CONF_TO: "04:00:00",
-                    CONF_DISABLED: True,
-                },
-                {
-                    CONF_FROM: "01:00:00",
-                    CONF_TO: "02:00:00",
-                },
-            ],
-        ),
+        [
+            {
+                CONF_FROM: "01:00:00",
+                CONF_TO: "02:00:00",
+            },
+        ],
+        [
+            {
+                CONF_FROM: "03:00:00",
+                CONF_TO: "04:00:00",
+                CONF_DISABLED: True,
+            },
+            {
+                CONF_FROM: "01:00:00",
+                CONF_TO: "02:00:00",
+            },
+        ],
     ],
     ids=["one", "two"],
 )
-def test_to_list(schedule: list[dict[str, str]]) -> None:
+def test_to_list(schedule: list[dict[str, Any]]) -> None:
     """Test schedule to string list function."""
     str_list = Schedule(schedule).to_list()
     schedule.sort(key=lambda time_range: time_range[CONF_FROM])
@@ -199,7 +205,7 @@ def test_to_list(schedule: list[dict[str, str]]) -> None:
 
 
 @pytest.mark.parametrize(
-    ["schedule", "next_update_sec_offset"],
+    ("schedule", "next_update_sec_offset"),
     [
         ([(-5, 5, False)], 5),
         ([(-10, -5, False)], datetime.timedelta(days=1).total_seconds() - 10),
@@ -220,7 +226,7 @@ def test_to_list(schedule: list[dict[str, str]]) -> None:
     ],
 )
 def test_next_update(
-    schedule: list[(int, int)],
+    schedule: list[Any],
     next_update_sec_offset: int | None,
 ) -> None:
     """Test next update logic."""

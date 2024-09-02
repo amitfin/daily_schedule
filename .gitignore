@@ -5,6 +5,7 @@ __pycache__
 */build/*
 */dist/*
 .DS_Store
+.ruff_cache
 
 # misc
 .coverage

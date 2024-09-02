@@ -1,10 +1,11 @@
 """The tests for the daily schedule integration."""
+
 from __future__ import annotations
 
-from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers import entity_registry as er
+from typing import TYPE_CHECKING
 
+from homeassistant.const import Platform
+from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.daily_schedule.const import (
@@ -13,6 +14,9 @@ from custom_components.daily_schedule.const import (
     CONF_TO,
     DOMAIN,
 )
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
 
 
 async def test_setup_change_remove_config_entry(hass: HomeAssistant) -> None:
@@ -29,6 +33,7 @@ async def test_setup_change_remove_config_entry(hass: HomeAssistant) -> None:
     registry = er.async_get(hass)
     assert registry.async_get(entity_id) is not None
     state = hass.states.get(entity_id)
+    assert state
     assert state.state == "off"
     assert state.attributes[CONF_SCHEDULE] == []
 
@@ -41,6 +46,7 @@ async def test_setup_change_remove_config_entry(hass: HomeAssistant) -> None:
 
     # Check the updated entity.
     state = hass.states.get(entity_id)
+    assert state
     assert state.state == "on"
     assert state.attributes[CONF_SCHEDULE] == [
         {CONF_FROM: "00:00:00", CONF_TO: "00:00:00"},

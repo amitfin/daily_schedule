@@ -1,7 +1,9 @@
 """Schedule and time range logic."""
+
 from __future__ import annotations
 
 import datetime
+from typing import Any
 
 from .const import CONF_DISABLED, CONF_FROM, CONF_TO
 
@@ -9,7 +11,7 @@ from .const import CONF_DISABLED, CONF_FROM, CONF_TO
 class TimeRange:
     """Time range with start and end (since "from" is a reserved word)."""
 
-    def __init__(self, start: str, end: str, disabled: bool) -> None:
+    def __init__(self, start: str, end: str, disabled: bool) -> None:  # noqa: FBT001
         """Initialize the object."""
         self.start: datetime.time = datetime.time.fromisoformat(start)
         self.end: datetime.time = datetime.time.fromisoformat(end)
@@ -31,13 +33,11 @@ class TimeRange:
 
         return self.start <= time < self.end
 
-    def to_dict(self) -> dict[str, str]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize the object as a dict."""
         return {
-            **{
-                CONF_FROM: self.start.isoformat(),
-                CONF_TO: self.end.isoformat(),
-            },
+            CONF_FROM: self.start.isoformat(),
+            CONF_TO: self.end.isoformat(),
             **({CONF_DISABLED: True} if self.disabled else {}),
         }
 
@@ -49,7 +49,7 @@ class TimeRange:
 class Schedule:
     """List of TimeRange."""
 
-    def __init__(self, schedule: list[dict[str, str]]) -> None:
+    def __init__(self, schedule: list[dict[str, Any]]) -> None:
         """Create a list of TimeRanges representing the schedule."""
         self._schedule = [
             TimeRange(
@@ -66,7 +66,7 @@ class Schedule:
         self._to_on = [
             time_range.start for time_range in self._schedule if time_range.enabled
         ]
-        # Remove "on to on" transitions of adjusted time ranges (as state doesn't change to off).
+        # Remove "on to on" transitions of adjusted time ranges (state doesn't change).
         self._to_off = sorted(
             {time_range.end for time_range in self._schedule if time_range.enabled}
             - set(self._to_on)
@@ -94,28 +94,28 @@ class Schedule:
             # Check that the time range doesn't overlap with the next one.
             # Note that adjusted time ranges are allowed.
             if self._schedule[i].end > self._schedule[i + 1].start:
-                raise ValueError(
+                error = (
                     f"'{self._schedule[i].to_str()}' overlaps "
                     f"'{self._schedule[i + 1].to_str()}'."
                 )
+                raise ValueError(error)
 
-        # Check the last time range.
-        if self._schedule[-1].end <= self._schedule[-1].start:
-            # If it crosses the day boundary, check overlap with 1st range.
-            if self._schedule[-1].end > self._schedule[0].start:
-                raise ValueError(
-                    f"'{self._schedule[-1].to_str()}' overlaps "
-                    f"'{self._schedule[0].to_str()}'."
-                )
+        # Check if last time range crosses the day boundary and overlap with 1st range.
+        if (
+            self._schedule[-1].end <= self._schedule[-1].start
+            and self._schedule[-1].end > self._schedule[0].start
+        ):
+            error = (
+                f"'{self._schedule[-1].to_str()}' overlaps "
+                f"'{self._schedule[0].to_str()}'."
+            )
+            raise ValueError(error)
 
     def containing(self, time: datetime.time) -> bool:
         """Check if the time is inside the range."""
-        for time_range in self._schedule:
-            if time_range.containing(time):
-                return True
-        return False
+        return any(time_range.containing(time) for time_range in self._schedule)
 
-    def to_list(self) -> list[dict[str, str]]:
+    def to_list(self) -> list[dict[str, Any]]:
         """Serialize the object as a list."""
         return [time_range.to_dict() for time_range in self._schedule]
 
