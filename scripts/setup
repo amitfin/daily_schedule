@@ -4,4 +4,7 @@ set -e
 
 cd "$(dirname "$0")/.."
 
-python3 -m pip install --requirement requirements.txt
+python3 -m pip install --upgrade pip --root-user-action ignore
+python3 -m pip install uv --root-user-action ignore
+uv pip install --system pytest-homeassistant-custom-component
+uv pip install --system -r requirements.txt
