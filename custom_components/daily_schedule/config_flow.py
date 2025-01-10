@@ -19,7 +19,7 @@ from .const import CONF_FROM, CONF_SCHEDULE, CONF_TO, CONF_UTC, DOMAIN
 from .schedule import Schedule
 
 if TYPE_CHECKING:
-    from homeassistant.data_entry_flow import FlowResult
+    from homeassistant.config_entries import ConfigFlowResult
 
 ADD_RANGE = "add_range"
 RANGE_DELIMITER = " - "
@@ -56,7 +56,7 @@ class DailyScheduleConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle a flow initialized by the user."""
         errors: dict[str, str] = {}
 
@@ -87,7 +87,7 @@ class DailyScheduleConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def async_step_time_range(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle adding a time range."""
         errors: dict[str, str] = {}
 
@@ -135,7 +135,7 @@ class OptionsFlowHandler(OptionsFlow):
         """Initialize options flow."""
         self.config_entry = config_entry
 
-    async def async_step_init(self, user_input: dict[str, Any]) -> FlowResult:
+    async def async_step_init(self, user_input: dict[str, Any]) -> ConfigFlowResult:
         """Handle an options flow."""
         errors: dict[str, str] = {}
 
