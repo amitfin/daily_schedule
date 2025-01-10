@@ -14,11 +14,13 @@ from homeassistant.helpers import event as event_helper
 
 from .const import (
     ATTR_NEXT_TOGGLE,
+    ATTR_NEXT_TOGGLES,
     CONF_DISABLED,
     CONF_FROM,
     CONF_SCHEDULE,
     CONF_TO,
     CONF_UTC,
+    NEXT_TOGGLES_COUNT,
     SERVICE_SET,
 )
 from .schedule import Schedule
@@ -69,6 +71,9 @@ class DailyScheduleSensor(BinarySensorEntity):
     _attr_has_entity_name = True
     _attr_should_poll = False
     _attr_icon = "mdi:timetable"
+    _entity_component_unrecorded_attributes = frozenset(
+        {ATTR_NEXT_TOGGLE, ATTR_NEXT_TOGGLES}
+    )
 
     def __init__(self, config_entry: ConfigEntry) -> None:
         """Initialize object with defaults."""
@@ -115,8 +120,10 @@ class DailyScheduleSensor(BinarySensorEntity):
     def _update_state(self, _: datetime.datetime | None = None) -> None:
         """Update the state and schedule next update."""
         self._clean_up_listener()
-        next_update = self._schedule.next_update(self._now())
+        next_toggles = self._schedule.next_updates(self._now(), NEXT_TOGGLES_COUNT)
+        next_update = next_toggles[0] if len(next_toggles) > 0 else None
         self._attr_extra_state_attributes[ATTR_NEXT_TOGGLE] = next_update
+        self._attr_extra_state_attributes[ATTR_NEXT_TOGGLES] = next_toggles
         self.async_write_ha_state()
         if next_update:
             self._unsub_update = event_helper.async_track_point_in_time(

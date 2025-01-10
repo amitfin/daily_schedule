@@ -15,5 +15,7 @@ CONF_SCHEDULE: Final = "schedule"
 CONF_UTC: Final = "utc"
 
 ATTR_NEXT_TOGGLE: Final = "next_toggle"
+ATTR_NEXT_TOGGLES: Final = "next_toggles"
+NEXT_TOGGLES_COUNT: Final = 4
 
 SERVICE_SET: Final = "set"

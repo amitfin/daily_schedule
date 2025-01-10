@@ -16,6 +16,7 @@ from pytest_homeassistant_custom_component.common import (
 
 from custom_components.daily_schedule.const import (
     ATTR_NEXT_TOGGLE,
+    ATTR_NEXT_TOGGLES,
     CONF_FROM,
     CONF_SCHEDULE,
     CONF_TO,
@@ -221,6 +222,12 @@ async def test_next_update(
     state = hass.states.get(f"{Platform.BINARY_SENSOR}.test1")
     assert state
     assert state.attributes[ATTR_NEXT_TOGGLE] == in_5_minutes
+    assert state.attributes[ATTR_NEXT_TOGGLES] == [
+        in_5_minutes,
+        previous_5_minutes + datetime.timedelta(days=1),
+        in_5_minutes + datetime.timedelta(days=1),
+        previous_5_minutes + datetime.timedelta(days=2),
+    ]
 
     # After all ranges.
     await setup_entity(
@@ -242,6 +249,12 @@ async def test_next_update(
     state = hass.states.get(f"{Platform.BINARY_SENSOR}.test2")
     assert state
     assert state.attributes[ATTR_NEXT_TOGGLE] == expected_next_update
+    assert state.attributes[ATTR_NEXT_TOGGLES] == [
+        expected_next_update,
+        previous_5_minutes + datetime.timedelta(days=1),
+        expected_next_update + datetime.timedelta(days=1),
+        previous_5_minutes + datetime.timedelta(days=2),
+    ]
 
     # Before any range.
     await setup_entity(
@@ -260,6 +273,12 @@ async def test_next_update(
     next_update = async_track_point_in_time.call_args[0][2]
     assert next_update == in_5_minutes
     assert state.attributes[ATTR_NEXT_TOGGLE] == in_5_minutes
+    assert state.attributes[ATTR_NEXT_TOGGLES] == [
+        in_5_minutes,
+        in_10_minutes,
+        in_5_minutes + datetime.timedelta(days=1),
+        in_10_minutes + datetime.timedelta(days=1),
+    ]
     await async_cleanup(hass)
 
 
@@ -340,8 +359,8 @@ async def test_utc(
 ) -> None:
     """Test utc schedule."""
     utc_time = datetime.datetime(2023, 5, 30, 12, tzinfo=pytz.utc)  # 12pm
-    local_time = utc_time.astimezone(pytz.timezone("US/Eastern"))  # 7am
-    offset = utc_time.timestamp() - local_time.replace(tzinfo=None).timestamp()  # 5h
+    local_time = utc_time.astimezone(pytz.timezone("US/Pacific"))  # 4am
+    offset = utc_time.timestamp() - local_time.replace(tzinfo=None).timestamp()  # 8h
     freezer.move_to(local_time)
     entity_id = f"{Platform.BINARY_SENSOR}.my_test"
     await setup_entity(
@@ -359,5 +378,31 @@ async def test_utc(
     assert state
     assert state.state == STATE_ON if utc else STATE_OFF
     next_toggle_timestamp = state.attributes[ATTR_NEXT_TOGGLE].timestamp()
-    assert next_toggle_timestamp == utc_time.timestamp() + 1 if utc else offset
+    assert next_toggle_timestamp == local_time.timestamp() + (1 if utc else offset)
+    if utc:
+        assert state.attributes[ATTR_NEXT_TOGGLES][0].timestamp() == (
+            local_time.timestamp() + 1
+        )
+        assert state.attributes[ATTR_NEXT_TOGGLES][1].timestamp() == (
+            (local_time + datetime.timedelta(days=1)).timestamp()
+        )
+        assert state.attributes[ATTR_NEXT_TOGGLES][2].timestamp() == (
+            (local_time + datetime.timedelta(days=1)).timestamp() + 1
+        )
+        assert state.attributes[ATTR_NEXT_TOGGLES][3].timestamp() == (
+            (local_time + datetime.timedelta(days=2)).timestamp()
+        )
+    else:
+        assert state.attributes[ATTR_NEXT_TOGGLES][0].timestamp() == (
+            local_time.timestamp() + offset
+        )
+        assert state.attributes[ATTR_NEXT_TOGGLES][1].timestamp() == (
+            local_time.timestamp() + offset + 1
+        )
+        assert state.attributes[ATTR_NEXT_TOGGLES][2].timestamp() == (
+            (local_time + datetime.timedelta(days=1)).timestamp() + offset
+        )
+        assert state.attributes[ATTR_NEXT_TOGGLES][3].timestamp() == (
+            (local_time + datetime.timedelta(days=1)).timestamp() + offset + 1
+        )
     await async_cleanup(hass)

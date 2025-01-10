@@ -249,3 +249,26 @@ def test_next_update(
         if next_update_sec_offset is not None
         else None
     )
+
+
+def test_next_updates() -> None:
+    """Test next updates."""
+    now = datetime.datetime.fromisoformat("2000-01-01")
+    assert Schedule(
+        [
+            {
+                CONF_FROM: "01:00",
+                CONF_TO: "02:00",
+            },
+            {
+                CONF_FROM: "03:00",
+                CONF_TO: "04:00",
+            },
+        ]
+    ).next_updates(now, 5) == [
+        now + datetime.timedelta(hours=1),
+        now + datetime.timedelta(hours=2),
+        now + datetime.timedelta(hours=3),
+        now + datetime.timedelta(hours=4),
+        now + datetime.timedelta(days=1, hours=1),
+    ]

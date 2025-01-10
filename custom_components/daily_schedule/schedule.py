@@ -143,3 +143,15 @@ class Schedule:
         return datetime.datetime.combine(
             today + datetime.timedelta(days=1), timestamps[0], tzinfo=date.tzinfo
         )
+
+    def next_updates(
+        self, date: datetime.datetime, count: int
+    ) -> list[datetime.datetime]:
+        """Get list of future updates."""
+        updates = []
+        if (update := self.next_update(date)) is not None:
+            while len(updates) < count:
+                updates.append(update)
+                if (update := self.next_update(update)) is None:
+                    break
+        return updates
