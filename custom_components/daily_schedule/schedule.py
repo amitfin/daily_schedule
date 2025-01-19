@@ -149,9 +149,8 @@ class Schedule:
     ) -> list[datetime.datetime]:
         """Get list of future updates."""
         updates = []
-        if (update := self.next_update(date)) is not None:
-            while len(updates) < count:
-                updates.append(update)
-                if (update := self.next_update(update)) is None:
-                    break
+        update = self.next_update(date)
+        while len(updates) < count and update is not None:
+            updates.append(update)
+            update = self.next_update(update)
         return updates
