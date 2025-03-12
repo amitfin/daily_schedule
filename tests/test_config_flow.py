@@ -9,9 +9,6 @@ from homeassistant.const import CONF_NAME
 from homeassistant.data_entry_flow import FlowResultType
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.daily_schedule.config_flow import (
-    ADD_RANGE,
-)
 from custom_components.daily_schedule.const import (
     CONF_FROM,
     CONF_SCHEDULE,
@@ -37,7 +34,7 @@ async def test_config_flow_no_schedule(hass: HomeAssistant) -> None:
 
     result2 = await hass.config_entries.flow.async_configure(
         result["flow_id"],
-        user_input={CONF_NAME: "test", ADD_RANGE: False},
+        user_input={CONF_NAME: "test"},
     )
 
     assert result2.get("type") == FlowResultType.CREATE_ENTRY
@@ -62,50 +59,10 @@ async def test_config_flow_duplicated(hass: HomeAssistant) -> None:
     )
     result2 = await hass.config_entries.flow.async_configure(
         result["flow_id"],
-        user_input={CONF_NAME: name, ADD_RANGE: False},
+        user_input={CONF_NAME: name},
     )
     assert result2.get("type") == FlowResultType.FORM
     assert (result2.get("errors") or {}).get("base") == "duplicated"
-
-
-async def test_config_flow_with_schedule(hass: HomeAssistant) -> None:
-    """Test the user flow with a schedule."""
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN,
-        context={"source": SOURCE_USER},
-    )
-
-    result2 = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        user_input={CONF_NAME: "test"},  # Default is to add a time range
-    )
-    assert result2.get("type") == FlowResultType.FORM
-    assert result2.get("step_id") == "time_range"
-
-    result3 = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        user_input={CONF_FROM: "15:00:00", CONF_TO: "20:00:00", ADD_RANGE: True},
-    )
-    assert result3.get("type") == FlowResultType.FORM
-    assert result3.get("step_id") == "time_range"
-
-    result4 = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        user_input={CONF_FROM: "05:00:00", CONF_TO: "10:00:00"},
-    )
-    assert result4.get("type") == FlowResultType.CREATE_ENTRY
-    assert result4.get("title") == "test"
-    assert result4.get("options") == {
-        CONF_SCHEDULE: [
-            {CONF_FROM: "05:00:00", CONF_TO: "10:00:00"},
-            {CONF_FROM: "15:00:00", CONF_TO: "20:00:00"},
-        ],
-        CONF_UTC: False,
-    }
-    assert await hass.config_entries.async_unload(
-        hass.config_entries.async_entries(DOMAIN)[0].entry_id
-    )
-    await hass.async_block_till_done()
 
 
 async def test_options_flow(hass: HomeAssistant) -> None:
@@ -125,20 +82,20 @@ async def test_options_flow(hass: HomeAssistant) -> None:
 
     result2 = await hass.config_entries.options.async_configure(
         result["flow_id"],
-        user_input={
-            ADD_RANGE: True,
-            CONF_FROM: "01:00:00",
-            CONF_TO: "04:00:00",
-        },
+        user_input={CONF_UTC: True},
     )
     assert result2.get("type") == FlowResultType.CREATE_ENTRY
     assert result2.get("data") == {
-        CONF_SCHEDULE: [
-            {CONF_FROM: "01:00:00", CONF_TO: "04:00:00"},
-            {CONF_FROM: "05:00:00", CONF_TO: "10:00:00"},
-        ],
-        CONF_UTC: False,
+        CONF_SCHEDULE: [{CONF_FROM: "05:00:00", CONF_TO: "10:00:00"}],
+        CONF_UTC: True,
     }
+
+    config_entry = hass.config_entries.async_entries(DOMAIN)[0]
+    assert config_entry.options[CONF_UTC] is True
+    assert config_entry.options[CONF_SCHEDULE] == [
+        {CONF_FROM: "05:00:00", CONF_TO: "10:00:00"}
+    ]
+
     assert await hass.config_entries.async_unload(config_entry.entry_id)
     await hass.async_block_till_done()
 
@@ -152,7 +109,7 @@ async def test_utc(hass: HomeAssistant) -> None:
 
     result2 = await hass.config_entries.flow.async_configure(
         result["flow_id"],
-        user_input={CONF_NAME: "test", ADD_RANGE: False, CONF_UTC: True},
+        user_input={CONF_NAME: "test", CONF_UTC: True},
     )
     assert result2.get("type") == FlowResultType.CREATE_ENTRY
 

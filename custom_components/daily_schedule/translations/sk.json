@@ -12,15 +12,6 @@
                     "add_range": "Pridajte časový rozsah",
                     "utc": "Čas UTC namiesto miestneho času (ak si nie ste istý, nepoužívajte ho)"
                 }
-            },
-            "time_range": {
-                "title": "Pridať časový rozsah",
-                "description": "Nastavte časový rozsah, kedy bude senzor zapnutý.",
-                "data": {
-                    "from": "Od",
-                    "to": "Do",
-                    "add_range": "Pridajte ďalší časový rozsah"
-                }
             }
         }
     },
@@ -28,11 +19,8 @@
         "step": {
             "init": {
                 "title": "Upraviť snímač denného plánu",
-                "description": "Upravte časové rozsahy v dennom pláne.",
+                "description": "Upravte konfiguráciu denného plánu.",
                 "data": {
-                    "add_range": "Pridajte nový časový rozsah",
-                    "from": "Od (nový)",
-                    "to": "Do (nový)",
                     "utc": "Čas UTC namiesto miestneho času (ak si nie ste istý, nepoužívajte ho)"
                 }
             }

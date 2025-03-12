@@ -9,17 +9,7 @@
         "description": "Create a binary sensor which turns on according to a daily schedule.",
         "data": {
           "name": "Name",
-          "add_range": "Add a time range",
           "utc": "UTC time instead of local (don't use if unsure)"
-        }
-      },
-      "time_range": {
-        "title": "Add Time Range",
-        "description": "Set a time range when the sensor will be on.",
-        "data": {
-          "from": "From",
-          "to": "To",
-          "add_range": "Add an additional time range"
         }
       }
     }
@@ -28,11 +18,8 @@
     "step": {
       "init": {
         "title": "Edit Daily Schedule Sensor",
-        "description": "Modify the time ranges in the daily schedule.",
+        "description": "Modify daily schedule configuration.",
         "data": {
-          "add_range": "Add a new time range",
-          "from": "From (new)",
-          "to": "To (new)",
           "utc": "UTC time instead of local (don't use if unsure)"
         }
       }
