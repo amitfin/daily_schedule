@@ -8,7 +8,64 @@ from typing import Any
 import pytest
 
 from custom_components.daily_schedule.const import CONF_DISABLED, CONF_FROM, CONF_TO
-from custom_components.daily_schedule.schedule import Schedule, TimeRange
+from custom_components.daily_schedule.schedule import (
+    Schedule,
+    TimeRange,
+    TimeRangeConfig,
+)
+
+
+@pytest.mark.parametrize(
+    ("from1", "to1", "from2", "to2", "result"),
+    [
+        ("01:00", "02:00", "01:00", "02:00", False),
+        ("01:01", "02:00", "01:00", "02:00", True),
+        ("01:00", "02:01", "01:00", "02:00", True),
+        ("01:00", "02:00", "01:01", "02:00", False),
+    ],
+    ids=["equal", "start", "length", "smaller"],
+)
+def test_greater_operator(
+    from1: str,
+    to1: str,
+    from2: str,
+    to2: str,
+    result: bool,  # noqa: FBT001
+) -> None:
+    """Test comparison of TimeRange."""
+    assert (
+        TimeRange(datetime.time.fromisoformat(from1), datetime.time.fromisoformat(to1))
+        > TimeRange(
+            datetime.time.fromisoformat(from2), datetime.time.fromisoformat(to2)
+        )
+    ) is result
+
+
+def test_sort() -> None:
+    """Test sorting of TimeRange."""
+    time_ranges = [
+        TimeRange(
+            datetime.time.fromisoformat("02:00"), datetime.time.fromisoformat("03:00")
+        ),
+        TimeRange(
+            datetime.time.fromisoformat("01:00"), datetime.time.fromisoformat("01:30")
+        ),
+        TimeRange(
+            datetime.time.fromisoformat("01:00"), datetime.time.fromisoformat("02:00")
+        ),
+    ]
+    time_ranges.sort()
+    assert time_ranges == [
+        TimeRange(
+            datetime.time.fromisoformat("01:00"), datetime.time.fromisoformat("01:30")
+        ),
+        TimeRange(
+            datetime.time.fromisoformat("01:00"), datetime.time.fromisoformat("02:00")
+        ),
+        TimeRange(
+            datetime.time.fromisoformat("02:00"), datetime.time.fromisoformat("03:00")
+        ),
+    ]
 
 
 @pytest.mark.parametrize(
@@ -41,7 +98,9 @@ def test_time_range(
 ) -> None:
     """Test for TimeRange class."""
     assert (
-        TimeRange(start, end, disabled).containing(datetime.time.fromisoformat(time))
+        TimeRangeConfig(start, end, disabled).containing(
+            datetime.time.fromisoformat(time)
+        )
         is result
     )
 
@@ -62,7 +121,7 @@ def test_time_range(
 def test_time_range_to_dict(param: dict[str, Any]) -> None:
     """Test TimeRange to_dict."""
     assert (
-        TimeRange(
+        TimeRangeConfig(
             param[CONF_FROM], param[CONF_TO], param.get(CONF_DISABLED, False)
         ).to_dict()
         == param
@@ -103,7 +162,7 @@ def test_schedule_containing(
 
 
 @pytest.mark.parametrize(
-    ("schedule", "reason"),
+    ("schedule", "on", "off"),
     [
         (
             [
@@ -114,14 +173,14 @@ def test_schedule_containing(
                 {
                     CONF_FROM: "07:08:09",
                     CONF_TO: "07:08:09",
-                    CONF_DISABLED: True,
                 },
                 {
                     CONF_FROM: "10:11:12",
                     CONF_TO: "10:11:13",
                 },
             ],
-            "zero",
+            "05:06:07",
+            None,
         ),
         (
             [
@@ -134,7 +193,8 @@ def test_schedule_containing(
                     CONF_TO: "10:11:12",
                 },
             ],
-            "negative",
+            "01:00:00",
+            "03:00:00",
         ),
         (
             [
@@ -145,33 +205,37 @@ def test_schedule_containing(
                 {
                     CONF_FROM: "01:02:03",
                     CONF_TO: "04:05:06",
-                    CONF_DISABLED: True,
                 },
             ],
-            "overlap",
+            "02:00:00",
+            "08:00:00",
         ),
         (
             [
                 {
                     CONF_FROM: "07:08:09",
                     CONF_TO: "01:02:04",
-                    CONF_DISABLED: True,
                 },
                 {
                     CONF_FROM: "01:02:03",
                     CONF_TO: "04:05:06",
                 },
             ],
-            "overlap",
+            "00:00:00",
+            "05:00:00",
         ),
     ],
-    ids=["zero length", "negative length", "overlap", "overnight_overlap"],
+    ids=["wrap whole", "warp", "overlap", "overnight_overlap"],
 )
-def test_invalid(schedule: list[dict[str, Any]], reason: str) -> None:
-    """Test invalid schedule."""
-    with pytest.raises(ValueError) as excinfo:  # noqa: PT011
-        Schedule(schedule)
-    assert reason in str(excinfo.value)
+def test_complex_schedule(
+    schedule: list[dict[str, Any]], on: str | None, off: str | None
+) -> None:
+    """Test complex schedule."""
+    test = Schedule(schedule)
+    if on is not None:
+        assert test.containing(datetime.time.fromisoformat(on)) is True
+    if off is not None:
+        assert test.containing(datetime.time.fromisoformat(off)) is False
 
 
 @pytest.mark.parametrize(
@@ -214,6 +278,8 @@ def test_to_list(schedule: list[dict[str, Any]]) -> None:
         ([(100, 200, False), (200, 100, False)], None),
         ([(-100, 100, False), (100, 200, False)], 200),
         ([(-100, 100, True), (100, 200, False)], 100),
+        ([(80, 100, False), (70, 90, False), (0, 80, False)], 100),
+        ([(200, 50, False), (20, 100, False)], 100),
     ],
     ids=[
         "inside range",
@@ -223,6 +289,8 @@ def test_to_list(schedule: list[dict[str, Any]]) -> None:
         "entire_day_2_ranges",
         "adjusted_ranges",
         "disabled_range",
+        "overlapping_ranges",
+        "overlap_and_wrap",
     ],
 )
 def test_next_update(

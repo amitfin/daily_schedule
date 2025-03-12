@@ -97,25 +97,20 @@ class DailyScheduleConfigFlow(ConfigFlow, domain=DOMAIN):
             time_ranges.append(
                 {CONF_FROM: user_input[CONF_FROM], CONF_TO: user_input[CONF_TO]}
             )
-            try:
-                schedule = Schedule(time_ranges)
-            except ValueError as err:
-                errors["base"] = "overlap" if "overlap" in str(err) else "length"
 
-            if not errors:
-                self.options[CONF_SCHEDULE] = schedule.to_list()
+            self.options[CONF_SCHEDULE] = Schedule(time_ranges).to_list()
 
-                if user_input[ADD_RANGE]:
-                    return await self.async_step_time_range()
+            if user_input[ADD_RANGE]:
+                return await self.async_step_time_range()
 
-                return self.async_create_entry(
-                    title=self.options[CONF_NAME],
-                    data={},
-                    options={
-                        CONF_SCHEDULE: self.options[CONF_SCHEDULE],
-                        CONF_UTC: self.options[CONF_UTC],
-                    },
-                )
+            return self.async_create_entry(
+                title=self.options[CONF_NAME],
+                data={},
+                options={
+                    CONF_SCHEDULE: self.options[CONF_SCHEDULE],
+                    CONF_UTC: self.options[CONF_UTC],
+                },
+            )
 
         return self.async_show_form(
             step_id="time_range", data_schema=CONFIG_RANGE, errors=errors
@@ -159,19 +154,13 @@ class OptionsFlowHandler(OptionsFlow):
                     }
                 )
 
-            try:
-                schedule = Schedule(time_ranges)
-            except ValueError as err:
-                errors["base"] = "overlap" if "overlap" in str(err) else "length"
-
-            if not errors:
-                return self.async_create_entry(
-                    title="",
-                    data={
-                        CONF_SCHEDULE: schedule.to_list(),
-                        CONF_UTC: user_input[CONF_UTC],
-                    },
-                )
+            return self.async_create_entry(
+                title="",
+                data={
+                    CONF_SCHEDULE: Schedule(time_ranges).to_list(),
+                    CONF_UTC: user_input[CONF_UTC],
+                },
+            )
 
         time_ranges = [
             f"{time_range[CONF_FROM]}{RANGE_DELIMITER}{time_range[CONF_TO]}"

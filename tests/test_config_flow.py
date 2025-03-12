@@ -11,7 +11,6 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.daily_schedule.config_flow import (
     ADD_RANGE,
-    RANGE_DELIMITER,
 )
 from custom_components.daily_schedule.const import (
     CONF_FROM,
@@ -109,32 +108,10 @@ async def test_config_flow_with_schedule(hass: HomeAssistant) -> None:
     await hass.async_block_till_done()
 
 
-async def test_config_flow_invalid_schedule(hass: HomeAssistant) -> None:
-    """Test the user flow with an invalid schedule."""
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN,
-        context={"source": SOURCE_USER},
-    )
-    await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        user_input={CONF_NAME: "test"},
-    )
-    await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        user_input={CONF_FROM: "05:00:00", CONF_TO: "10:00:00", ADD_RANGE: True},
-    )
-    result2 = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        user_input={CONF_FROM: "03:00:00", CONF_TO: "06:00:00"},
-    )
-    assert result2.get("type") == FlowResultType.FORM
-    assert result2.get("step_id") == "time_range"
-    assert (result2.get("errors") or {}).get("base") == "overlap"
-
-
 async def test_options_flow(hass: HomeAssistant) -> None:
     """Test the options flow."""
     config_entry = MockConfigEntry(
+        options={CONF_SCHEDULE: [{CONF_FROM: "05:00:00", CONF_TO: "10:00:00"}]},
         domain=DOMAIN,
         title="My Test",
     )
@@ -158,36 +135,10 @@ async def test_options_flow(hass: HomeAssistant) -> None:
     assert result2.get("data") == {
         CONF_SCHEDULE: [
             {CONF_FROM: "01:00:00", CONF_TO: "04:00:00"},
+            {CONF_FROM: "05:00:00", CONF_TO: "10:00:00"},
         ],
         CONF_UTC: False,
     }
-    assert await hass.config_entries.async_unload(config_entry.entry_id)
-    await hass.async_block_till_done()
-
-
-async def test_invalid_options_flow(hass: HomeAssistant) -> None:
-    """Test invalid options flow."""
-    config_entry = MockConfigEntry(
-        options={CONF_SCHEDULE: [{CONF_FROM: "05:00:00", CONF_TO: "10:00:00"}]},
-        domain=DOMAIN,
-        title="My Test",
-    )
-    config_entry.add_to_hass(hass)
-    assert await hass.config_entries.async_setup(config_entry.entry_id)
-    await hass.async_block_till_done()
-
-    result = await hass.config_entries.options.async_init(config_entry.entry_id)
-    result2 = await hass.config_entries.options.async_configure(
-        result["flow_id"],
-        user_input={
-            CONF_SCHEDULE: [f"05:00:00{RANGE_DELIMITER}10:00:00"],
-            ADD_RANGE: True,
-            CONF_FROM: "01:00:00",
-            CONF_TO: "06:00:00",
-        },
-    )
-    assert result2.get("type") == FlowResultType.FORM
-    assert (result2.get("errors") or {}).get("base") == "overlap"
     assert await hass.config_entries.async_unload(config_entry.entry_id)
     await hass.async_block_till_done()
 

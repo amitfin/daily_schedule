@@ -7,43 +7,64 @@ from typing import Any
 
 from .const import CONF_DISABLED, CONF_FROM, CONF_TO
 
+MIDNIGHT = datetime.time()
+
 
 class TimeRange:
-    """Time range with start and end (since "from" is a reserved word)."""
+    """Time range."""
 
-    def __init__(self, start: str, end: str, disabled: bool) -> None:  # noqa: FBT001
+    def __init__(self, from_: datetime.time, to: datetime.time) -> None:
         """Initialize the object."""
-        self.start: datetime.time = datetime.time.fromisoformat(start)
-        self.end: datetime.time = datetime.time.fromisoformat(end)
-        self.disabled = disabled
+        self.from_: datetime.time = from_
+        self._from_offset = from_.hour * 3600 + from_.minute * 60 + from_.second
+        self.to: datetime.time = to
+        self._to_offset = to.hour * 3600 + to.minute * 60 + to.second
+        self.wrap = self.to <= self.from_
+        self.seconds = (
+            self._to_offset - self._from_offset
+            if not self.wrap
+            else 86400 - self._from_offset + self._to_offset
+        )
 
-    @property
-    def enabled(self) -> bool:
-        """Return if time range is enabled."""
-        return not self.disabled
+    def __eq__(self, other: TimeRange) -> bool:
+        """Compare two TimeRanges."""
+        return self.from_ == other.from_ and self.to == other.to
+
+    def __gt__(self, other: TimeRange) -> bool:
+        """Compare two TimeRanges."""
+        if self.from_ != other.from_:
+            return self.from_ > other.from_
+        return self.seconds > other.seconds
 
     def containing(self, time: datetime.time) -> bool:
         """Check if the time is inside the range."""
-        if self.disabled:
-            return False
+        if self.wrap:
+            return self.from_ <= time or time < self.to
 
-        # If the range crosses the day boundary.
-        if self.end <= self.start:
-            return self.start <= time or time < self.end
+        return self.from_ <= time < self.to
 
-        return self.start <= time < self.end
+
+class TimeRangeConfig(TimeRange):
+    """Time range configuration."""
+
+    def __init__(self, from_: str, to: str, disabled: bool) -> None:  # noqa: FBT001
+        """Initialize the object."""
+        super().__init__(
+            datetime.time.fromisoformat(from_), datetime.time.fromisoformat(to)
+        )
+        self.disabled = disabled
+
+    def containing(self, time: datetime.time) -> bool:
+        """Check if the time is inside the range."""
+        return not self.disabled and super().containing(time)
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize the object as a dict."""
         return {
-            CONF_FROM: self.start.isoformat(),
-            CONF_TO: self.end.isoformat(),
+            CONF_FROM: self.from_.isoformat(),
+            CONF_TO: self.to.isoformat(),
             **({CONF_DISABLED: True} if self.disabled else {}),
         }
-
-    def to_str(self) -> str:
-        """Serialize the object as a string."""
-        return f"{self.start.isoformat()} - {self.end.isoformat()}"
 
 
 class Schedule:
@@ -51,65 +72,57 @@ class Schedule:
 
     def __init__(self, schedule: list[dict[str, Any]]) -> None:
         """Create a list of TimeRanges representing the schedule."""
-        self._schedule = [
-            TimeRange(
-                time_range[CONF_FROM],
-                time_range[CONF_TO],
-                time_range.get(CONF_DISABLED, False),
-            )
-            for time_range in schedule
-        ]
+        self._config = sorted(
+            [
+                TimeRangeConfig(
+                    time_range[CONF_FROM],
+                    time_range[CONF_TO],
+                    time_range.get(CONF_DISABLED, False),
+                )
+                for time_range in schedule
+            ]
+        )
+        self._calculate_schedule()
+
+    def _calculate_schedule(self) -> None:
+        """Calculate the schedule."""
+        schedule = []
+
+        # Break wrap time ranges into two separate time ranges.
+        for time_range in self._config:
+            if time_range.disabled:
+                continue
+            if not time_range.wrap:
+                schedule.append(TimeRange(time_range.from_, time_range.to))
+            else:
+                schedule.append(TimeRange(time_range.from_, MIDNIGHT))
+                schedule.append(TimeRange(MIDNIGHT, time_range.to))
+        schedule.sort()
+
+        # Merge overlapping time ranges.
+        self._schedule = []
+        while len(schedule):
+            from_range = schedule.pop(0)
+            to_range = from_range
+            while len(schedule) and (
+                schedule[0].from_ <= to_range.to or to_range.to == MIDNIGHT
+            ):
+                if (
+                    schedule[0].to > to_range.to or schedule[0].to == MIDNIGHT
+                ) and to_range.to != MIDNIGHT:
+                    to_range = schedule[0]
+                schedule.pop(0)
+            self._schedule.append(TimeRange(from_range.from_, to_range.to))
+
         if not self._schedule:
             return
-        self._schedule.sort(key=lambda time_range: time_range.start)
-        self._validate()
-        self._to_on = [
-            time_range.start for time_range in self._schedule if time_range.enabled
-        ]
-        # Remove "on to on" transitions of adjusted time ranges (state doesn't change).
-        self._to_off = sorted(
-            {time_range.end for time_range in self._schedule if time_range.enabled}
-            - set(self._to_on)
-        )
 
-    def _validate(self) -> None:
-        """Validate the schedule."""
-        # An empty schedule or a schedule with a single entry is always valid.
-        if len(self._schedule) <= 1:
-            return
-
-        # Check all except the last time range of the schedule.
-        for i in range(len(self._schedule) - 1):
-            # The end time should be greater than the start time.
-            if not self._schedule[i].end > self._schedule[i].start:
-                raise ValueError(
-                    f"'{self._schedule[i].to_str()}' length is "
-                    + (
-                        "zero."
-                        if self._schedule[i].end == self._schedule[i].start
-                        else "negative."
-                    )
-                )
-
-            # Check that the time range doesn't overlap with the next one.
-            # Note that adjusted time ranges are allowed.
-            if self._schedule[i].end > self._schedule[i + 1].start:
-                error = (
-                    f"'{self._schedule[i].to_str()}' overlaps "
-                    f"'{self._schedule[i + 1].to_str()}'."
-                )
-                raise ValueError(error)
-
-        # Check if last time range crosses the day boundary and overlap with 1st range.
-        if (
-            self._schedule[-1].end <= self._schedule[-1].start
-            and self._schedule[-1].end > self._schedule[0].start
-        ):
-            error = (
-                f"'{self._schedule[-1].to_str()}' overlaps "
-                f"'{self._schedule[0].to_str()}'."
-            )
-            raise ValueError(error)
+        # Calculate on and off transitions.
+        self._to_on = [time_range.from_ for time_range in self._schedule]
+        self._to_off = [time_range.to for time_range in self._schedule]
+        if self._to_on[0] == MIDNIGHT and self._to_off[-1] == MIDNIGHT:
+            self._to_on.pop(0)
+            self._to_off.pop(-1)
 
     def containing(self, time: datetime.time) -> bool:
         """Check if the time is inside the range."""
@@ -117,7 +130,7 @@ class Schedule:
 
     def to_list(self) -> list[dict[str, Any]]:
         """Serialize the object as a list."""
-        return [time_range.to_dict() for time_range in self._schedule]
+        return [time_range.to_dict() for time_range in self._config]
 
     def next_update(self, date: datetime.datetime) -> datetime.datetime | None:
         """Schedule a timer for the point when the state should be changed."""
@@ -130,7 +143,7 @@ class Schedule:
             return None
 
         time = date.time()
-        prev = datetime.time()  # Midnight.
+        prev = MIDNIGHT
         today = date.date()
 
         # Find the smallest timestamp which is bigger than time.

@@ -307,47 +307,6 @@ async def test_set(hass: HomeAssistant) -> None:
 
 
 @pytest.mark.parametrize(
-    "schedule",
-    [
-        [
-            {
-                CONF_FROM: "04:05:05",
-                CONF_TO: "07:08:09",
-            },
-            {
-                CONF_FROM: "01:02:03",
-                CONF_TO: "04:05:06",
-            },
-        ],
-        [
-            {
-                CONF_FROM: "07:08:09",
-                CONF_TO: "01:02:04",
-            },
-            {
-                CONF_FROM: "01:02:03",
-                CONF_TO: "04:05:06",
-            },
-        ],
-    ],
-    ids=["overlap", "overnight_overlap"],
-)
-async def test_invalid_set(hass: HomeAssistant, schedule: list[dict[str, Any]]) -> None:
-    """Test invalid input to set method."""
-    entity_id = f"{Platform.BINARY_SENSOR}.my_test"
-    await setup_entity(hass, "My Test", [])
-    with pytest.raises(ValueError) as excinfo:  # noqa: PT011
-        await hass.services.async_call(
-            DOMAIN,
-            SERVICE_SET,
-            {ATTR_ENTITY_ID: entity_id, CONF_SCHEDULE: schedule},
-            blocking=True,
-        )
-    assert "overlap" in str(excinfo.value)
-    await async_cleanup(hass)
-
-
-@pytest.mark.parametrize(
     "utc",
     [True, False],
     ids=["utc", "local"],

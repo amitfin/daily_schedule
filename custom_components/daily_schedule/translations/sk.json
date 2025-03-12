@@ -1,9 +1,7 @@
 {
     "config": {
         "error": {
-            "duplicated": "Názov by mal byť jedinečný.",
-            "overlap": "Časové rozsahy sa nemôžu prekrývať. Znova zadajte nový časový rozsah.",
-            "length": "Dĺžka časového rozsahu by mala byť kladná. Znova zadajte nový časový rozsah."
+            "duplicated": "Názov by mal byť jedinečný."
         },
         "step": {
             "user": {
@@ -27,10 +25,6 @@
         }
     },
     "options": {
-        "error": {
-            "overlap": "Časové rozsahy sa nemôžu prekrývať. Znova zadajte nový časový rozsah.",
-            "length": "Dĺžka časového rozsahu by mala byť kladná. Znova zadajte nový časový rozsah."
-        },
         "step": {
             "init": {
                 "title": "Upraviť snímač denného plánu",
