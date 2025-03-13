@@ -287,8 +287,18 @@ def test_schedule_containing(
             "00:00:00",
             "05:00:00",
         ),
+        (
+            [
+                {
+                    CONF_FROM: SUNRISE_SYMBOL,
+                    CONF_TO: "00:00:00",
+                },
+            ],
+            "20:00:00",
+            "00:00:00",
+        ),
     ],
-    ids=["wrap whole", "warp", "overlap", "overnight_overlap"],
+    ids=["wrap whole", "warp", "overlap", "overnight_overlap", "sunrise to midnight"],
 )
 def test_complex_schedule(
     hass: HomeAssistant, schedule: list[dict[str, Any]], on: str | None, off: str | None

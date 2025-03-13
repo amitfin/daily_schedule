@@ -153,7 +153,7 @@ class Schedule:
         for time_range in self._config:
             if time_range.disabled:
                 continue
-            if not time_range.wrap:
+            if not time_range.wrap or time_range.to == MIDNIGHT:
                 schedule.append(TimeRange(time_range.from_, time_range.to))
             else:
                 schedule.append(TimeRange(time_range.from_, MIDNIGHT))
