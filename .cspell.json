@@ -2,19 +2,20 @@
   "version": "0.2",
   "language": "en",
   "words": [
-    "homeassistant",
-    "hass",
-    "unsub",
-    "codeowners",
     "amitfin",
-    "pytest",
-    "venv",
     "autouse",
-    "freezegun",
-    "pytz",
+    "codeowners",
     "excinfo",
+    "freezegun",
     "HACS",
+    "hass",
+    "homeassistant",
+    "pytest",
+    "PYTHONPATH",
+    "pytz",
     "timedelta",
-    "PYTHONPATH"
+    "unsub",
+    "usefixtures",
+    "venv"
   ]
 }

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 from typing import TYPE_CHECKING, Any
 
 import homeassistant.helpers.config_validation as cv
@@ -13,6 +14,7 @@ from homeassistant.helpers import entity_platform
 from homeassistant.helpers import event as event_helper
 
 from .const import (
+    ATTR_EFFECTIVE_SCHEDULE,
     ATTR_NEXT_TOGGLE,
     ATTR_NEXT_TOGGLES,
     CONF_DISABLED,
@@ -22,11 +24,12 @@ from .const import (
     CONF_UTC,
     NEXT_TOGGLES_COUNT,
     SERVICE_SET,
+    SUNRISE_SYMBOL,
+    SUNSET_SYMBOL,
 )
 from .schedule import Schedule
 
 if TYPE_CHECKING:
-    import datetime
     from collections.abc import Callable, MutableMapping
 
     from homeassistant.config_entries import ConfigEntry
@@ -38,10 +41,28 @@ def remove_micros_and_tz(time: datetime.time) -> str:
     return time.replace(microsecond=0, tzinfo=None).isoformat()
 
 
+def dynamic_time(value: Any) -> str:
+    """Validate and transform a time string to a time object."""
+    time = cv.string(value)
+    if not time.startswith((SUNRISE_SYMBOL, SUNSET_SYMBOL)):
+        error = (
+            f"should begin with sunrise symbol ({SUNRISE_SYMBOL}) "
+            f"or sunset symbol ({{SUNSET_SYMBOL}})"
+        )
+        raise vol.Invalid(error)
+    if len(time) > 1:
+        vol.Coerce(int)(time[1:])
+    return time
+
+
 ENTRY_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_FROM): vol.All(cv.time, remove_micros_and_tz),
-        vol.Required(CONF_TO): vol.All(cv.time, remove_micros_and_tz),
+        vol.Required(CONF_FROM): vol.Any(
+            vol.All(cv.time, remove_micros_and_tz), dynamic_time
+        ),
+        vol.Required(CONF_TO): vol.Any(
+            vol.All(cv.time, remove_micros_and_tz), dynamic_time
+        ),
         vol.Optional(CONF_DISABLED): cv.boolean,
     },
     extra=vol.ALLOW_EXTRA,
@@ -55,12 +76,12 @@ SERVICE_SET_SCHEMA = cv.make_entity_service_schema(
 
 
 async def async_setup_entry(
-    _: HomeAssistant,
+    hass: HomeAssistant,
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Initialize config entry."""
-    async_add_entities([DailyScheduleSensor(config_entry)])
+    async_add_entities([DailyScheduleSensor(hass, config_entry)])
     platform = entity_platform.async_get_current_platform()
     platform.async_register_entity_service(SERVICE_SET, SERVICE_SET_SCHEMA, "async_set")
 
@@ -72,20 +93,25 @@ class DailyScheduleSensor(BinarySensorEntity):
     _attr_should_poll = False
     _attr_icon = "mdi:timetable"
     _entity_component_unrecorded_attributes = frozenset(
-        {ATTR_NEXT_TOGGLE, ATTR_NEXT_TOGGLES}
+        {ATTR_NEXT_TOGGLE, ATTR_NEXT_TOGGLES, ATTR_EFFECTIVE_SCHEDULE, CONF_SCHEDULE}
     )
 
-    def __init__(self, config_entry: ConfigEntry) -> None:
+    def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry) -> None:
         """Initialize object with defaults."""
+        self._hass = hass
         self._config_entry = config_entry
         self._attr_name = config_entry.title
         self._attr_unique_id = config_entry.entry_id
-        self._schedule: Schedule = Schedule(config_entry.options.get(CONF_SCHEDULE, []))
+        self._schedule: Schedule = Schedule(
+            hass, config_entry.options.get(CONF_SCHEDULE, [])
+        )
         self._attr_extra_state_attributes: MutableMapping[str, Any] = {
-            CONF_SCHEDULE: self._schedule.to_list()
+            CONF_SCHEDULE: self._schedule.to_list(),
+            ATTR_EFFECTIVE_SCHEDULE: self._schedule.to_list_absolute(),
         }
         self._utc = config_entry.options.get(CONF_UTC, False)
         self._unsub_update: Callable[[], None] | None = None
+        self._unsub_dynamic_time: Callable[[], None] | None = None
 
     def _now(self) -> datetime.datetime:
         """Return the current time either as local or UTC, based on configuration."""
@@ -97,29 +123,33 @@ class DailyScheduleSensor(BinarySensorEntity):
         return self._schedule.containing(self._now().time())
 
     @callback
-    def _clean_up_listener(self) -> None:
-        """Remove the update timer."""
+    def _clean_up_listeners(self) -> None:
+        """Remove the timers."""
         if self._unsub_update is not None:
             self._unsub_update()
             self._unsub_update = None
+        if self._unsub_dynamic_time is not None:
+            self._unsub_dynamic_time()
+            self._unsub_dynamic_time = None
 
     async def async_added_to_hass(self) -> None:
         """Run when entity about to be added to hass."""
         await super().async_added_to_hass()
-        self.async_on_remove(self._clean_up_listener)
+        self.async_on_remove(self._clean_up_listeners)
+        self._schedule_dynamic_update()
         self._update_state()
 
     async def async_set(self, schedule: list[dict[str, Any]]) -> None:
         """Update the config entry with the new list (non-admin support)."""
         self.hass.config_entries.async_update_entry(
             self._config_entry,
-            options={CONF_SCHEDULE: Schedule(schedule).to_list()},
+            options={CONF_SCHEDULE: Schedule(self._hass, schedule).to_list()},
         )
 
     @callback
     def _update_state(self, _: datetime.datetime | None = None) -> None:
         """Update the state and schedule next update."""
-        self._clean_up_listener()
+        self._unsub_update = None
         next_toggles = self._schedule.next_updates(self._now(), NEXT_TOGGLES_COUNT)
         next_update = next_toggles[0] if len(next_toggles) > 0 else None
         self._attr_extra_state_attributes[ATTR_NEXT_TOGGLE] = next_update
@@ -129,3 +159,22 @@ class DailyScheduleSensor(BinarySensorEntity):
             self._unsub_update = event_helper.async_track_point_in_time(
                 self.hass, self._update_state, next_update
             )
+
+    def _schedule_dynamic_update(self) -> None:
+        """Schedule the dynamic time ranges update."""
+        self._unsub_dynamic_time = event_helper.async_track_point_in_time(
+            self.hass,
+            self._update_dynamic_ranges,
+            datetime.datetime.combine(dt_util.now().date(), datetime.time())
+            + datetime.timedelta(days=1),  # The beginning of the next day.
+        )
+
+    @callback
+    def _update_dynamic_ranges(self, _: datetime.datetime | None = None) -> None:
+        """Resolve sunrise and sunset in the schedule."""
+        self._schedule = Schedule(self._hass, self._schedule.to_list())
+        self._attr_extra_state_attributes[ATTR_EFFECTIVE_SCHEDULE] = (
+            self._schedule.to_list_absolute()
+        )
+        self.async_write_ha_state()
+        self._schedule_dynamic_update()

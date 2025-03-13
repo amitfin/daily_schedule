@@ -3,9 +3,20 @@
 from __future__ import annotations
 
 import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from .const import CONF_DISABLED, CONF_FROM, CONF_TO
+from homeassistant.const import (
+    SUN_EVENT_SUNRISE,
+    SUN_EVENT_SUNSET,
+)
+from homeassistant.exceptions import IntegrationError
+from homeassistant.helpers import sun
+from homeassistant.util.dt import as_local
+
+from .const import CONF_DISABLED, CONF_FROM, CONF_TO, SUNRISE_SYMBOL, SUNSET_SYMBOL
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
 
 MIDNIGHT = datetime.time()
 
@@ -43,16 +54,57 @@ class TimeRange:
 
         return self.from_ <= time < self.to
 
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize the object as a dict."""
+        return {
+            CONF_FROM: self.from_.isoformat(),
+            CONF_TO: self.to.isoformat(),
+        }
+
 
 class TimeRangeConfig(TimeRange):
     """Time range configuration."""
 
-    def __init__(self, from_: str, to: str, disabled: bool) -> None:  # noqa: FBT001
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        from_: str,
+        to: str,
+        disabled: bool,  # noqa: FBT001
+    ) -> None:
         """Initialize the object."""
-        super().__init__(
-            datetime.time.fromisoformat(from_), datetime.time.fromisoformat(to)
-        )
+        self._dynamic_from, from_time = self.resolve_dynamic(hass, from_)
+        self._dynamic_to, to_time = self.resolve_dynamic(hass, to)
+        super().__init__(from_time, to_time)
         self.disabled = disabled
+
+    def resolve_dynamic(
+        self, hass: HomeAssistant, value: str
+    ) -> tuple[str | None, datetime.time]:
+        """Resolve dynamic time range."""
+        if not value.startswith((SUNRISE_SYMBOL, SUNSET_SYMBOL)):
+            return None, datetime.time.fromisoformat(value)
+
+        if (
+            time := sun.get_astral_event_date(
+                hass,
+                SUN_EVENT_SUNRISE if value[0] == SUNRISE_SYMBOL else SUN_EVENT_SUNSET,
+            )
+        ) is None:
+            # Should never happen, but the above call can return None.
+            error_message = "Unable to resolve sunrise/sunset time."
+            raise IntegrationError(error_message)
+        time = as_local(time).time().replace(microsecond=0, tzinfo=None)
+        offset = int(value[1:]) if len(value) > 1 else 0
+
+        if offset == 0:
+            return value[:1], time
+
+        time = (
+            datetime.datetime.combine(datetime.datetime.min, time)
+            + datetime.timedelta(minutes=offset)
+        ).time()
+        return f"{value[0]}{offset:+}", time
 
     def containing(self, time: datetime.time) -> bool:
         """Check if the time is inside the range."""
@@ -61,20 +113,29 @@ class TimeRangeConfig(TimeRange):
     def to_dict(self) -> dict[str, Any]:
         """Serialize the object as a dict."""
         return {
-            CONF_FROM: self.from_.isoformat(),
-            CONF_TO: self.to.isoformat(),
+            CONF_FROM: self.from_.isoformat()
+            if self._dynamic_from is None
+            else self._dynamic_from,
+            CONF_TO: self.to.isoformat()
+            if self._dynamic_to is None
+            else self._dynamic_to,
             **({CONF_DISABLED: True} if self.disabled else {}),
         }
+
+    def to_dict_absolute(self) -> dict[str, Any]:
+        """Serialize the object as a dict after sunrise/sunset resolution."""
+        return super().to_dict()
 
 
 class Schedule:
     """List of TimeRange."""
 
-    def __init__(self, schedule: list[dict[str, Any]]) -> None:
+    def __init__(self, hass: HomeAssistant, schedule: list[dict[str, Any]]) -> None:
         """Create a list of TimeRanges representing the schedule."""
         self._config = sorted(
             [
                 TimeRangeConfig(
+                    hass,
                     time_range[CONF_FROM],
                     time_range[CONF_TO],
                     time_range.get(CONF_DISABLED, False),
@@ -117,6 +178,17 @@ class Schedule:
         if not self._schedule:
             return
 
+        # Merge the first and last time ranges if they are adjusting.
+        if (
+            len(self._schedule) > 1
+            and self._schedule[0].from_ == MIDNIGHT
+            and self._schedule[-1].to == MIDNIGHT
+        ):
+            self._schedule[-1] = TimeRange(
+                self._schedule[-1].from_, self._schedule[0].to
+            )
+            self._schedule.pop(0)
+
         # Calculate on and off transitions.
         self._to_on = [time_range.from_ for time_range in self._schedule]
         self._to_off = [time_range.to for time_range in self._schedule]
@@ -131,6 +203,10 @@ class Schedule:
     def to_list(self) -> list[dict[str, Any]]:
         """Serialize the object as a list."""
         return [time_range.to_dict() for time_range in self._config]
+
+    def to_list_absolute(self) -> list[dict[str, Any]]:
+        """Serialize schedule as a list using absolute time (without sunrise/sunset)."""
+        return [time_range.to_dict() for time_range in self._schedule]
 
     def next_update(self, date: datetime.datetime) -> datetime.datetime | None:
         """Schedule a timer for the point when the state should be changed."""

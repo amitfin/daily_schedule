@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 import pytz
+import voluptuous as vol
 from homeassistant.const import ATTR_ENTITY_ID, STATE_OFF, STATE_ON, Platform
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
@@ -15,6 +16,7 @@ from pytest_homeassistant_custom_component.common import (
 )
 
 from custom_components.daily_schedule.const import (
+    ATTR_EFFECTIVE_SCHEDULE,
     ATTR_NEXT_TOGGLE,
     ATTR_NEXT_TOGGLES,
     CONF_FROM,
@@ -23,6 +25,8 @@ from custom_components.daily_schedule.const import (
     CONF_UTC,
     DOMAIN,
     SERVICE_SET,
+    SUNRISE_SYMBOL,
+    SUNSET_SYMBOL,
 )
 
 if TYPE_CHECKING:
@@ -306,6 +310,60 @@ async def test_set(hass: HomeAssistant) -> None:
     await async_cleanup(hass)
 
 
+async def test_set_dynamic(hass: HomeAssistant) -> None:
+    """Test set service with dynamic ranges."""
+    entity_id = f"{Platform.BINARY_SENSOR}.my_test"
+    await setup_entity(hass, "My Test", [])
+    state = hass.states.get(entity_id)
+    assert state
+    assert not len(state.attributes[CONF_SCHEDULE])
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_SET,
+        {
+            CONF_SCHEDULE: [
+                {CONF_FROM: SUNRISE_SYMBOL, CONF_TO: SUNSET_SYMBOL},
+                {CONF_FROM: "↑+0", CONF_TO: "↓-0"},
+                {CONF_FROM: "↑-20", CONF_TO: "↓+30"},
+            ],
+        },
+        target={ATTR_ENTITY_ID: entity_id},
+    )
+    await hass.async_block_till_done()
+    state = hass.states.get(entity_id)
+    assert state
+    assert len(state.attributes[CONF_SCHEDULE]) == 3
+    await async_cleanup(hass)
+
+
+@pytest.mark.parametrize(
+    ("schedule"),
+    [
+        [{CONF_FROM: "a", CONF_TO: SUNSET_SYMBOL}],
+        [{CONF_FROM: SUNRISE_SYMBOL, CONF_TO: ""}],
+        [{CONF_FROM: "↑a", CONF_TO: SUNSET_SYMBOL}],
+        [{CONF_FROM: SUNRISE_SYMBOL, CONF_TO: "↓-3a"}],
+    ],
+    ids=["prefix", "empty", "int1", "int2"],
+)
+async def test_set_invalid_dynamic(
+    hass: HomeAssistant, schedule: list[dict[str, str]]
+) -> None:
+    """Test set service with invalid dynamic ranges."""
+    entity_id = f"{Platform.BINARY_SENSOR}.my_test"
+    await setup_entity(hass, "My Test", [])
+    with pytest.raises(vol.MultipleInvalid):
+        await hass.services.async_call(
+            DOMAIN,
+            SERVICE_SET,
+            {
+                CONF_SCHEDULE: schedule,
+            },
+            target={ATTR_ENTITY_ID: entity_id},
+        )
+    await async_cleanup(hass)
+
+
 @pytest.mark.parametrize(
     "utc",
     [True, False],
@@ -364,4 +422,43 @@ async def test_utc(
         assert state.attributes[ATTR_NEXT_TOGGLES][3].timestamp() == (
             (local_time + datetime.timedelta(days=1)).timestamp() + offset + 1
         )
+    await async_cleanup(hass)
+
+
+async def test_dynamic_update(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Test dynamic update."""
+    freezer.move_to("2025-03-12T00:00:00")
+    hass.config.latitude = 32.072
+    hass.config.longitude = 34.879
+    await hass.config.async_set_time_zone("Asia/Jerusalem")
+    entity_id = f"{Platform.BINARY_SENSOR}.my_test"
+    await setup_entity(
+        hass, "My Test", [{CONF_FROM: SUNRISE_SYMBOL, CONF_TO: SUNSET_SYMBOL}]
+    )
+
+    state = hass.states.get(entity_id)
+    assert state
+    assert state.attributes[CONF_SCHEDULE] == [
+        {CONF_FROM: SUNRISE_SYMBOL, CONF_TO: SUNSET_SYMBOL}
+    ]
+    assert state.attributes[ATTR_EFFECTIVE_SCHEDULE] == [
+        {CONF_FROM: "05:54:37", CONF_TO: "17:46:10"}
+    ]
+
+    freezer.tick(datetime.timedelta(days=1))
+    async_fire_time_changed(hass, freezer.time_to_freeze)
+    await hass.async_block_till_done()
+
+    state = hass.states.get(entity_id)
+    assert state
+    assert state.attributes[CONF_SCHEDULE] == [
+        {CONF_FROM: SUNRISE_SYMBOL, CONF_TO: SUNSET_SYMBOL}
+    ]
+    assert state.attributes[ATTR_EFFECTIVE_SCHEDULE] == [
+        {CONF_FROM: "05:53:21", CONF_TO: "17:46:53"}
+    ]
+
     await async_cleanup(hass)

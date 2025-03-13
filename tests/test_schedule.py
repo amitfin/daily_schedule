@@ -3,16 +3,28 @@
 from __future__ import annotations
 
 import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
+from unittest.mock import Mock, patch
 
 import pytest
+from homeassistant.exceptions import IntegrationError
 
-from custom_components.daily_schedule.const import CONF_DISABLED, CONF_FROM, CONF_TO
+from custom_components.daily_schedule.const import (
+    CONF_DISABLED,
+    CONF_FROM,
+    CONF_TO,
+    SUNRISE_SYMBOL,
+    SUNSET_SYMBOL,
+)
 from custom_components.daily_schedule.schedule import (
     Schedule,
     TimeRange,
     TimeRangeConfig,
 )
+
+if TYPE_CHECKING:
+    from freezegun.api import FrozenDateTimeFactory
+    from homeassistant.core import HomeAssistant
 
 
 @pytest.mark.parametrize(
@@ -89,7 +101,8 @@ def test_sort() -> None:
         "entire day disabled",
     ],
 )
-def test_time_range(
+def test_time_range(  # noqa: PLR0913
+    hass: HomeAssistant,
     start: str,
     end: str,
     time: str,
@@ -98,11 +111,58 @@ def test_time_range(
 ) -> None:
     """Test for TimeRange class."""
     assert (
-        TimeRangeConfig(start, end, disabled).containing(
+        TimeRangeConfig(hass, start, end, disabled).containing(
             datetime.time.fromisoformat(time)
         )
         is result
     )
+
+
+@pytest.mark.parametrize(
+    ("from_", "to", "from_absolute", "to_absolute", "from_string", "to_string"),
+    [
+        (
+            SUNRISE_SYMBOL,
+            SUNSET_SYMBOL,
+            "05:54:37",
+            "17:46:10",
+            SUNRISE_SYMBOL,
+            SUNSET_SYMBOL,
+        ),
+        ("↑+10", "↓-10", "06:04:37", "17:36:10", "↑+10", "↓-10"),
+        ("↑+0", "↓-0", "05:54:37", "17:46:10", SUNRISE_SYMBOL, SUNSET_SYMBOL),
+    ],
+    ids=[
+        "sunrise to sunset",
+        "offsets",
+        "zero offset",
+    ],
+)
+async def test_dynamic_range(  # noqa: PLR0913
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    from_: str,
+    to: str,
+    from_absolute: str,
+    to_absolute: str,
+    from_string: str,
+    to_string: str,
+) -> None:
+    """Test dynamic from and to."""
+    freezer.move_to("2025-03-12T00:00:00")
+    hass.config.latitude = 32.072
+    hass.config.longitude = 34.879
+    await hass.config.async_set_time_zone("Asia/Jerusalem")
+    test = TimeRangeConfig(hass, from_, to, False)  # noqa: FBT003
+    assert test.to_dict() == {CONF_FROM: from_string, CONF_TO: to_string}
+    assert test.to_dict_absolute() == {CONF_FROM: from_absolute, CONF_TO: to_absolute}
+
+
+@patch("homeassistant.helpers.sun.get_astral_event_date", return_value=None)
+def test_sun_not_resolvable(_: Mock, hass: HomeAssistant) -> None:  # noqa: PT019
+    """Test error when sun is not resolvable."""
+    with pytest.raises(IntegrationError):
+        TimeRangeConfig(hass, SUNRISE_SYMBOL, SUNSET_SYMBOL, False)  # noqa: FBT003
 
 
 @pytest.mark.parametrize(
@@ -118,11 +178,11 @@ def test_time_range(
         "entire day",
     ],
 )
-def test_time_range_to_dict(param: dict[str, Any]) -> None:
+def test_time_range_to_dict(hass: HomeAssistant, param: dict[str, Any]) -> None:
     """Test TimeRange to_dict."""
     assert (
         TimeRangeConfig(
-            param[CONF_FROM], param[CONF_TO], param.get(CONF_DISABLED, False)
+            hass, param[CONF_FROM], param[CONF_TO], param.get(CONF_DISABLED, False)
         ).to_dict()
         == param
     )
@@ -153,12 +213,15 @@ def test_time_range_to_dict(param: dict[str, Any]) -> None:
     ],
 )
 def test_schedule_containing(
+    hass: HomeAssistant,
     schedule: list[dict[str, Any]],
     time: str,
     result: bool,  # noqa: FBT001
 ) -> None:
     """Test containing method of Schedule."""
-    assert Schedule(schedule).containing(datetime.time.fromisoformat(time)) is result
+    assert (
+        Schedule(hass, schedule).containing(datetime.time.fromisoformat(time)) is result
+    )
 
 
 @pytest.mark.parametrize(
@@ -228,10 +291,10 @@ def test_schedule_containing(
     ids=["wrap whole", "warp", "overlap", "overnight_overlap"],
 )
 def test_complex_schedule(
-    schedule: list[dict[str, Any]], on: str | None, off: str | None
+    hass: HomeAssistant, schedule: list[dict[str, Any]], on: str | None, off: str | None
 ) -> None:
     """Test complex schedule."""
-    test = Schedule(schedule)
+    test = Schedule(hass, schedule)
     if on is not None:
         assert test.containing(datetime.time.fromisoformat(on)) is True
     if off is not None:
@@ -261,11 +324,31 @@ def test_complex_schedule(
     ],
     ids=["one", "two"],
 )
-def test_to_list(schedule: list[dict[str, Any]]) -> None:
+def test_to_list(hass: HomeAssistant, schedule: list[dict[str, Any]]) -> None:
     """Test schedule to string list function."""
-    str_list = Schedule(schedule).to_list()
+    str_list = Schedule(hass, schedule).to_list()
     schedule.sort(key=lambda time_range: time_range[CONF_FROM])
     assert str_list == schedule
+
+
+def test_merge(hass: HomeAssistant) -> None:
+    """Test merging logic."""
+    assert Schedule(
+        hass,
+        [
+            {CONF_FROM: "22:00:00", CONF_TO: "02:00:00"},
+            {CONF_FROM: "19:00:00", CONF_TO: "22:00:00"},
+        ],
+    ).to_list_absolute() == [{CONF_FROM: "19:00:00", CONF_TO: "02:00:00"}]
+
+    assert Schedule(
+        hass,
+        [
+            {CONF_FROM: "01:00:00", CONF_TO: "05:00:00"},
+            {CONF_FROM: "23:00:00", CONF_TO: "01:00:00"},
+            {CONF_FROM: "05:00:00", CONF_TO: "23:00:00"},
+        ],
+    ).to_list_absolute() == [{CONF_FROM: "00:00:00", CONF_TO: "00:00:00"}]
 
 
 @pytest.mark.parametrize(
@@ -294,12 +377,14 @@ def test_to_list(schedule: list[dict[str, Any]]) -> None:
     ],
 )
 def test_next_update(
+    hass: HomeAssistant,
     schedule: list[Any],
     next_update_sec_offset: int | None,
 ) -> None:
     """Test next update logic."""
     now = datetime.datetime.fromisoformat("2000-01-01")
     assert Schedule(
+        hass,
         [
             {
                 CONF_FROM: (now + datetime.timedelta(seconds=from_sec_offset))
@@ -311,7 +396,7 @@ def test_next_update(
                 CONF_DISABLED: disabled,
             }
             for (from_sec_offset, to_sec_offset, disabled) in schedule
-        ]
+        ],
     ).next_update(now) == (
         now + datetime.timedelta(seconds=next_update_sec_offset)
         if next_update_sec_offset is not None
@@ -319,10 +404,13 @@ def test_next_update(
     )
 
 
-def test_next_updates() -> None:
+def test_next_updates(
+    hass: HomeAssistant,
+) -> None:
     """Test next updates."""
     now = datetime.datetime.fromisoformat("2000-01-01")
     assert Schedule(
+        hass,
         [
             {
                 CONF_FROM: "01:00",
@@ -332,7 +420,7 @@ def test_next_updates() -> None:
                 CONF_FROM: "03:00",
                 CONF_TO: "04:00",
             },
-        ]
+        ],
     ).next_updates(now, 5) == [
         now + datetime.timedelta(hours=1),
         now + datetime.timedelta(hours=2),

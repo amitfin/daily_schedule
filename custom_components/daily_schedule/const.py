@@ -14,8 +14,12 @@ CONF_TO: Final = "to"
 CONF_SCHEDULE: Final = "schedule"
 CONF_UTC: Final = "utc"
 
+ATTR_EFFECTIVE_SCHEDULE: Final = "effective_schedule"
 ATTR_NEXT_TOGGLE: Final = "next_toggle"
 ATTR_NEXT_TOGGLES: Final = "next_toggles"
 NEXT_TOGGLES_COUNT: Final = 4
 
 SERVICE_SET: Final = "set"
+
+SUNRISE_SYMBOL: Final = "↑"
+SUNSET_SYMBOL: Final = "↓"
