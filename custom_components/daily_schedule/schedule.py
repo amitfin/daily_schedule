@@ -11,7 +11,7 @@ from homeassistant.const import (
 )
 from homeassistant.exceptions import IntegrationError
 from homeassistant.helpers import sun
-from homeassistant.util.dt import as_local
+from homeassistant.util.dt import as_local, now
 
 from .const import CONF_DISABLED, CONF_FROM, CONF_TO, SUNRISE_SYMBOL, SUNSET_SYMBOL
 
@@ -101,7 +101,7 @@ class TimeRangeConfig(TimeRange):
             return value[:1], time
 
         time = (
-            datetime.datetime.combine(datetime.datetime.min, time)
+            datetime.datetime.combine(now().date(), time)
             + datetime.timedelta(minutes=offset)
         ).time()
         return f"{value[0]}{offset:+}", time
