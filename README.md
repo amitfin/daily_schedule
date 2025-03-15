@@ -30,7 +30,15 @@ Or, in the Home Assistant UI go through the following path:
 
 => Click "+ Create helper" button and search for "Daily Schedule".
 
-## Schedule Time Ranges
+## Usage (Lovelace Card)
+
+<img width="601" alt="image" src="https://github.com/user-attachments/assets/44dee96b-72e3-4bbe-81d4-b88c3ce9cb63" />
+<br>
+<img width="342" src="https://github.com/user-attachments/assets/dbaf02e2-7bed-48d3-97cf-cc767ea93691" />
+<br>
+<img src="https://github.com/user-attachments/assets/7466f370-f22c-49dc-888a-35233d55f065" width="534"/>
+
+## Time Ranges
 
 Each range has `from` and `to`. If the `to` is less than or equal `from` it's treated as time in the following day. One interesting case is when `from` equals `to`. This type of range covers the whole day (always on).
 
