@@ -6,7 +6,7 @@
 
 ![Project Maintenance](https://img.shields.io/badge/maintainer-Amit%20Finkelstein-blue.svg?style=for-the-badge)
 
-The Daily Schedule integration provides a binary sensor that gets its ON/OFF state according to the user-defined schedule.
+The Daily Schedule integration provides a binary sensor that gets its `on` / `off` state according to the user-defined schedule of time ranges.
 
 _There is a corresponding [Lovelace card](https://github.com/amitfin/lovelace-daily-schedule-card) which should be used for configuration. To open the card installation page inside HACS click [here](https://my.home-assistant.io/redirect/hacs_repository/?owner=amitfin&repository=lovelace-daily-schedule-card&category=plugin)._
 
@@ -36,8 +36,8 @@ Each range has `from` and `to`. If the `to` is less than or equal `from` it's tr
 
 There are 3 ways to specify time:
 1. A fixed time (e.g. 12:30).
-2. Sunrise with an optional offset.
-3. Sunset with an optional offset.
+2. Sunrise with an optional negative / positive offset.
+3. Sunset with an optional negative / positive offset.
 
 ## Additional Cards
 
