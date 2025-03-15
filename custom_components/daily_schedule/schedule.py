@@ -147,52 +147,56 @@ class Schedule:
 
     def _calculate_schedule(self) -> None:
         """Calculate the schedule."""
-        schedule = []
-
-        # Break wrap time ranges into two separate time ranges.
-        for time_range in self._config:
-            if time_range.disabled:
-                continue
-            if not time_range.wrap or time_range.to == MIDNIGHT:
-                schedule.append(TimeRange(time_range.from_, time_range.to))
-            else:
-                schedule.append(TimeRange(time_range.from_, MIDNIGHT))
-                schedule.append(TimeRange(MIDNIGHT, time_range.to))
-        schedule.sort()
-
-        # Merge overlapping time ranges.
         self._schedule = []
-        while len(schedule):
-            from_range = schedule.pop(0)
-            to_range = from_range
-            while len(schedule) and (
-                schedule[0].from_ <= to_range.to or to_range.to == MIDNIGHT
+
+        # There is nothing to do for a single time range.
+        if len(self._config) == 1:
+            if not self._config[0].disabled:
+                self._schedule.append(
+                    TimeRange(self._config[0].from_, self._config[0].to)
+                )
+        else:
+            # Break wrap time ranges into two separate time ranges.
+            schedule = []
+            for time_range in self._config:
+                if time_range.disabled:
+                    continue
+                if not time_range.wrap or time_range.to == MIDNIGHT:
+                    schedule.append(TimeRange(time_range.from_, time_range.to))
+                else:
+                    schedule.append(TimeRange(time_range.from_, MIDNIGHT))
+                    schedule.append(TimeRange(MIDNIGHT, time_range.to))
+            schedule.sort()
+
+            # Merge overlapping time ranges.
+            while len(schedule):
+                from_range = schedule.pop(0)
+                to_range = from_range
+                while len(schedule) and (
+                    schedule[0].from_ <= to_range.to or to_range.to == MIDNIGHT
+                ):
+                    if (
+                        schedule[0].to > to_range.to or schedule[0].to == MIDNIGHT
+                    ) and to_range.to != MIDNIGHT:
+                        to_range = schedule[0]
+                    schedule.pop(0)
+                self._schedule.append(TimeRange(from_range.from_, to_range.to))
+
+            # Merge the first and last time ranges if they are adjusting.
+            if (
+                len(self._schedule) > 1
+                and self._schedule[0].from_ == MIDNIGHT
+                and self._schedule[-1].to == MIDNIGHT
             ):
-                if (
-                    schedule[0].to > to_range.to or schedule[0].to == MIDNIGHT
-                ) and to_range.to != MIDNIGHT:
-                    to_range = schedule[0]
-                schedule.pop(0)
-            self._schedule.append(TimeRange(from_range.from_, to_range.to))
-
-        if not self._schedule:
-            return
-
-        # Merge the first and last time ranges if they are adjusting.
-        if (
-            len(self._schedule) > 1
-            and self._schedule[0].from_ == MIDNIGHT
-            and self._schedule[-1].to == MIDNIGHT
-        ):
-            self._schedule[-1] = TimeRange(
-                self._schedule[-1].from_, self._schedule[0].to
-            )
-            self._schedule.pop(0)
+                self._schedule[-1] = TimeRange(
+                    self._schedule[-1].from_, self._schedule[0].to
+                )
+                self._schedule.pop(0)
 
         # Calculate on and off transitions.
         self._to_on = [time_range.from_ for time_range in self._schedule]
         self._to_off = [time_range.to for time_range in self._schedule]
-        if self._to_on[0] == MIDNIGHT and self._to_off[-1] == MIDNIGHT:
+        if self._schedule and self._to_on[0] == self._to_off[-1]:
             self._to_on.pop(0)
             self._to_off.pop(-1)
 

@@ -341,24 +341,40 @@ def test_to_list(hass: HomeAssistant, schedule: list[dict[str, Any]]) -> None:
     assert str_list == schedule
 
 
-def test_merge(hass: HomeAssistant) -> None:
+@pytest.mark.parametrize(
+    ("schedule", "expected"),
+    [
+        (
+            [],
+            [],
+        ),
+        (
+            [
+                {CONF_FROM: "22:00:00", CONF_TO: "02:00:00"},
+                {CONF_FROM: "19:00:00", CONF_TO: "22:00:00"},
+            ],
+            [{CONF_FROM: "19:00:00", CONF_TO: "02:00:00"}],
+        ),
+        (
+            [
+                {CONF_FROM: "01:00:00", CONF_TO: "05:00:00"},
+                {CONF_FROM: "23:00:00", CONF_TO: "01:00:00"},
+                {CONF_FROM: "05:00:00", CONF_TO: "23:00:00"},
+            ],
+            [{CONF_FROM: "00:00:00", CONF_TO: "00:00:00"}],
+        ),
+        (
+            [{CONF_FROM: "12:00:00", CONF_TO: "12:00:00"}],
+            [{CONF_FROM: "12:00:00", CONF_TO: "12:00:00"}],
+        ),
+    ],
+    ids=["empty", "adjusting", "whole day", "single range"],
+)
+def test_merge(
+    hass: HomeAssistant, schedule: list[dict[str, Any]], expected: list[dict[str, Any]]
+) -> None:
     """Test merging logic."""
-    assert Schedule(
-        hass,
-        [
-            {CONF_FROM: "22:00:00", CONF_TO: "02:00:00"},
-            {CONF_FROM: "19:00:00", CONF_TO: "22:00:00"},
-        ],
-    ).to_list_absolute() == [{CONF_FROM: "19:00:00", CONF_TO: "02:00:00"}]
-
-    assert Schedule(
-        hass,
-        [
-            {CONF_FROM: "01:00:00", CONF_TO: "05:00:00"},
-            {CONF_FROM: "23:00:00", CONF_TO: "01:00:00"},
-            {CONF_FROM: "05:00:00", CONF_TO: "23:00:00"},
-        ],
-    ).to_list_absolute() == [{CONF_FROM: "00:00:00", CONF_TO: "00:00:00"}]
+    assert Schedule(hass, schedule).to_list_absolute() == expected
 
 
 @pytest.mark.parametrize(
