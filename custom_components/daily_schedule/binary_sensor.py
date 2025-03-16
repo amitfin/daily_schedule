@@ -92,7 +92,7 @@ class DailyScheduleSensor(BinarySensorEntity):
     _attr_has_entity_name = True
     _attr_should_poll = False
     _attr_icon = "mdi:timetable"
-    _entity_component_unrecorded_attributes = frozenset(
+    _unrecorded_attributes = frozenset(
         {ATTR_NEXT_TOGGLE, ATTR_NEXT_TOGGLES, ATTR_EFFECTIVE_SCHEDULE, CONF_SCHEDULE}
     )
 
@@ -107,11 +107,9 @@ class DailyScheduleSensor(BinarySensorEntity):
         )
         self._attr_extra_state_attributes: MutableMapping[str, Any] = {
             CONF_SCHEDULE: self._schedule.to_list(),
-            ATTR_EFFECTIVE_SCHEDULE: self._schedule.to_list_absolute(),
         }
         self._utc = config_entry.options.get(CONF_UTC, False)
         self._unsub_update: Callable[[], None] | None = None
-        self._unsub_dynamic_time: Callable[[], None] | None = None
 
     def _now(self) -> datetime.datetime:
         """Return the current time either as local or UTC, based on configuration."""
@@ -123,20 +121,16 @@ class DailyScheduleSensor(BinarySensorEntity):
         return self._schedule.containing(self._now().time())
 
     @callback
-    def _clean_up_listeners(self) -> None:
-        """Remove the timers."""
+    def _clean_up_listener(self) -> None:
+        """Remove the timer."""
         if self._unsub_update is not None:
             self._unsub_update()
             self._unsub_update = None
-        if self._unsub_dynamic_time is not None:
-            self._unsub_dynamic_time()
-            self._unsub_dynamic_time = None
 
     async def async_added_to_hass(self) -> None:
         """Run when entity about to be added to hass."""
         await super().async_added_to_hass()
-        self.async_on_remove(self._clean_up_listeners)
-        self._schedule_dynamic_update()
+        self.async_on_remove(self._clean_up_listener)
         self._update_state()
 
     async def async_set(self, schedule: list[dict[str, Any]]) -> None:
@@ -148,33 +142,36 @@ class DailyScheduleSensor(BinarySensorEntity):
 
     @callback
     def _update_state(self, _: datetime.datetime | None = None) -> None:
-        """Update the state and schedule next update."""
+        """Update the state & attributes and schedule next update."""
         self._unsub_update = None
+
+        # Re-resolve sunrise/sunset times.
+        self._schedule = Schedule(
+            self._hass, self._attr_extra_state_attributes[CONF_SCHEDULE]
+        )
+        self._attr_extra_state_attributes[ATTR_EFFECTIVE_SCHEDULE] = (
+            self._schedule.to_list_absolute()
+        )
+
         next_toggles = self._schedule.next_updates(self._now(), NEXT_TOGGLES_COUNT)
         next_update = next_toggles[0] if len(next_toggles) > 0 else None
         self._attr_extra_state_attributes[ATTR_NEXT_TOGGLE] = next_update
         self._attr_extra_state_attributes[ATTR_NEXT_TOGGLES] = next_toggles
+
         self.async_write_ha_state()
-        if next_update:
+
+        if (
+            next_update
+            or self._attr_extra_state_attributes[ATTR_EFFECTIVE_SCHEDULE]
+            != self._attr_extra_state_attributes[CONF_SCHEDULE]
+        ):
+            tomorrow = dt_util.now().replace(
+                hour=0, minute=0, second=0, microsecond=0
+            ) + datetime.timedelta(days=1)
+
+            if not next_update or tomorrow < next_update:
+                next_update = tomorrow
+
             self._unsub_update = event_helper.async_track_point_in_time(
                 self.hass, self._update_state, next_update
             )
-
-    def _schedule_dynamic_update(self) -> None:
-        """Schedule the dynamic time ranges update."""
-        self._unsub_dynamic_time = event_helper.async_track_point_in_time(
-            self.hass,
-            self._update_dynamic_ranges,
-            datetime.datetime.combine(dt_util.now().date(), datetime.time())
-            + datetime.timedelta(days=1),  # The beginning of the next day.
-        )
-
-    @callback
-    def _update_dynamic_ranges(self, _: datetime.datetime | None = None) -> None:
-        """Resolve sunrise and sunset in the schedule."""
-        self._schedule = Schedule(self._hass, self._schedule.to_list())
-        self._attr_extra_state_attributes[ATTR_EFFECTIVE_SCHEDULE] = (
-            self._schedule.to_list_absolute()
-        )
-        self.async_write_ha_state()
-        self._schedule_dynamic_update()

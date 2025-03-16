@@ -430,7 +430,7 @@ async def test_dynamic_update(
     freezer: FrozenDateTimeFactory,
 ) -> None:
     """Test dynamic update."""
-    freezer.move_to("2025-03-12T00:00:00")
+    freezer.move_to("2025-03-12T00:00:00Z-02:00")
     hass.config.latitude = 32.072
     hass.config.longitude = 34.879
     await hass.config.async_set_time_zone("Asia/Jerusalem")
@@ -447,6 +447,12 @@ async def test_dynamic_update(
     assert state.attributes[ATTR_EFFECTIVE_SCHEDULE] == [
         {CONF_FROM: "05:54:37", CONF_TO: "17:46:10"}
     ]
+    assert (
+        state.attributes[ATTR_NEXT_TOGGLE].timestamp()
+        == (
+            freezer.time_to_freeze + datetime.timedelta(hours=5, minutes=54, seconds=37)
+        ).timestamp()
+    )
 
     freezer.tick(datetime.timedelta(days=1))
     async_fire_time_changed(hass, freezer.time_to_freeze)
@@ -459,6 +465,46 @@ async def test_dynamic_update(
     ]
     assert state.attributes[ATTR_EFFECTIVE_SCHEDULE] == [
         {CONF_FROM: "05:53:21", CONF_TO: "17:46:53"}
+    ]
+    assert (
+        state.attributes[ATTR_NEXT_TOGGLE].timestamp()
+        == (
+            freezer.time_to_freeze + datetime.timedelta(hours=5, minutes=53, seconds=21)
+        ).timestamp()
+    )
+
+    await async_cleanup(hass)
+
+
+async def test_dynamic_update_entire_day(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Test dynamic update with an entire day range."""
+    freezer.move_to("2025-03-12T00:00:00")
+    hass.config.latitude = 32.072
+    hass.config.longitude = 34.879
+    await hass.config.async_set_time_zone("Asia/Jerusalem")
+    entity_id = f"{Platform.BINARY_SENSOR}.my_test"
+    await setup_entity(
+        hass, "My Test", [{CONF_FROM: SUNRISE_SYMBOL, CONF_TO: SUNRISE_SYMBOL}]
+    )
+
+    state = hass.states.get(entity_id)
+    assert state
+    assert state.attributes[ATTR_EFFECTIVE_SCHEDULE] == [
+        {CONF_FROM: "05:54:37", CONF_TO: "05:54:37"}
+    ]
+    assert not state.attributes[ATTR_NEXT_TOGGLE]
+
+    freezer.tick(datetime.timedelta(days=1))
+    async_fire_time_changed(hass, freezer.time_to_freeze)
+    await hass.async_block_till_done()
+
+    state = hass.states.get(entity_id)
+    assert state
+    assert state.attributes[ATTR_EFFECTIVE_SCHEDULE] == [
+        {CONF_FROM: "05:53:21", CONF_TO: "05:53:21"}
     ]
 
     await async_cleanup(hass)
