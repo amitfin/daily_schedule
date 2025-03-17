@@ -378,6 +378,45 @@ def test_merge(
 
 
 @pytest.mark.parametrize(
+    ("schedule", "expected"),
+    [
+        (
+            [],
+            False,
+        ),
+        (
+            [
+                {CONF_FROM: "22:00:00", CONF_TO: "02:00:00"},
+            ],
+            False,
+        ),
+        (
+            [
+                {CONF_FROM: "22:00:00", CONF_TO: "02:00:00"},
+                {CONF_FROM: SUNRISE_SYMBOL, CONF_TO: "08:00:00"},
+            ],
+            True,
+        ),
+        (
+            [
+                {CONF_FROM: "22:00:00", CONF_TO: "02:00:00"},
+                {CONF_FROM: "12:00:00", CONF_TO: SUNSET_SYMBOL},
+            ],
+            True,
+        ),
+    ],
+    ids=["empty", "fixed", "dynamic from", "dynamic to"],
+)
+def test_dynamic(
+    hass: HomeAssistant,
+    schedule: list[dict[str, Any]],
+    expected: bool,  # noqa: FBT001
+) -> None:
+    """Test is_dynamic logic."""
+    assert Schedule(hass, schedule).is_dynamic() == expected
+
+
+@pytest.mark.parametrize(
     ("schedule", "next_update_sec_offset"),
     [
         ([(-5, 5, False)], 5),
