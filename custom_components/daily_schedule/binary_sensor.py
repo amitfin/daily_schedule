@@ -107,7 +107,9 @@ class DailyScheduleSensor(BinarySensorEntity):
         )
         self._attr_extra_state_attributes: MutableMapping[str, Any] = {
             CONF_SCHEDULE: self._schedule.to_list(),
+            ATTR_EFFECTIVE_SCHEDULE: self._schedule.to_list_absolute(),
         }
+        self._is_dynamic = self._schedule.is_dynamic()
         self._utc = config_entry.options.get(CONF_UTC, False)
         self._unsub_update: Callable[[], None] | None = None
 
@@ -145,13 +147,14 @@ class DailyScheduleSensor(BinarySensorEntity):
         """Update the state & attributes and schedule next update."""
         self._unsub_update = None
 
-        # Re-resolve sunrise/sunset times.
-        self._schedule = Schedule(
-            self._hass, self._attr_extra_state_attributes[CONF_SCHEDULE]
-        )
-        self._attr_extra_state_attributes[ATTR_EFFECTIVE_SCHEDULE] = (
-            self._schedule.to_list_absolute()
-        )
+        if self._is_dynamic:
+            # Re-resolve sunrise/sunset times.
+            self._schedule = Schedule(
+                self._hass, self._attr_extra_state_attributes[CONF_SCHEDULE]
+            )
+            self._attr_extra_state_attributes[ATTR_EFFECTIVE_SCHEDULE] = (
+                self._schedule.to_list_absolute()
+            )
 
         next_toggles = self._schedule.next_updates(self._now(), NEXT_TOGGLES_COUNT)
         next_update = next_toggles[0] if len(next_toggles) > 0 else None
@@ -160,11 +163,7 @@ class DailyScheduleSensor(BinarySensorEntity):
 
         self.async_write_ha_state()
 
-        if (
-            next_update
-            or self._attr_extra_state_attributes[ATTR_EFFECTIVE_SCHEDULE]
-            != self._attr_extra_state_attributes[CONF_SCHEDULE]
-        ):
+        if next_update or self._is_dynamic:
             tomorrow = dt_util.now().replace(
                 hour=0, minute=0, second=0, microsecond=0
             ) + datetime.timedelta(days=1)

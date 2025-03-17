@@ -106,6 +106,10 @@ class TimeRangeConfig(TimeRange):
         ).time()
         return f"{value[0]}{offset:+}", time
 
+    def is_dynamic(self) -> bool:
+        """Check if the time range is dynamic."""
+        return self._dynamic_from is not None or self._dynamic_to is not None
+
     def containing(self, time: datetime.time) -> bool:
         """Check if the time is inside the range."""
         return not self.disabled and super().containing(time)
@@ -199,6 +203,10 @@ class Schedule:
         if self._schedule and self._to_on[0] == self._to_off[-1]:
             self._to_on.pop(0)
             self._to_off.pop(-1)
+
+    def is_dynamic(self) -> bool:
+        """Check if the schedule contains at least one dynamic time."""
+        return any(time_range_config.is_dynamic() for time_range_config in self._config)
 
     def containing(self, time: datetime.time) -> bool:
         """Check if the time is inside the range."""
