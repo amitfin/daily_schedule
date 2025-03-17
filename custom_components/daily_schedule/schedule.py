@@ -173,10 +173,10 @@ class Schedule:
             schedule.sort()
 
             # Merge overlapping time ranges.
-            while len(schedule):
+            while schedule:
                 from_range = schedule.pop(0)
                 to_range = from_range
-                while len(schedule) and (
+                while schedule and (
                     schedule[0].from_ <= to_range.to or to_range.to == MIDNIGHT
                 ):
                     if (
