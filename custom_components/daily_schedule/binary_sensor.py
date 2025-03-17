@@ -163,11 +163,12 @@ class DailyScheduleSensor(BinarySensorEntity):
 
         self.async_write_ha_state()
 
-        tomorrow = None
-        if self._is_dynamic:
-            tomorrow = dt_util.now().replace(
-                hour=0, minute=0, second=0, microsecond=0
-            ) + datetime.timedelta(days=1)
+        tomorrow = (
+            dt_util.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            + datetime.timedelta(days=1)
+            if self._is_dynamic
+            else None
+        )
 
         if not next_update or (tomorrow and tomorrow < next_update):
             next_update = tomorrow
