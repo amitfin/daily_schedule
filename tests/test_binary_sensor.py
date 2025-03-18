@@ -310,6 +310,21 @@ async def test_set(hass: HomeAssistant) -> None:
     await async_cleanup(hass)
 
 
+async def test_set_preserves_utc(hass: HomeAssistant) -> None:
+    """Test set service doesn't change UTC option."""
+    entity_id = f"{Platform.BINARY_SENSOR}.my_test"
+    await setup_entity(hass, "My Test", [], utc=True)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_SET,
+        {CONF_SCHEDULE: []},
+        target={ATTR_ENTITY_ID: entity_id},
+    )
+    await hass.async_block_till_done()
+    assert hass.config_entries.async_entries(DOMAIN)[0].options[CONF_UTC] is True
+    await async_cleanup(hass)
+
+
 async def test_set_dynamic(hass: HomeAssistant) -> None:
     """Test set service with dynamic ranges."""
     entity_id = f"{Platform.BINARY_SENSOR}.my_test"

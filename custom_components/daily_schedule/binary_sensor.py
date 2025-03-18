@@ -139,7 +139,10 @@ class DailyScheduleSensor(BinarySensorEntity):
         """Update the config entry with the new list (non-admin support)."""
         self.hass.config_entries.async_update_entry(
             self._config_entry,
-            options={CONF_SCHEDULE: Schedule(self._hass, schedule).to_list()},
+            options={
+                **self._config_entry.options,
+                CONF_SCHEDULE: Schedule(self._hass, schedule).to_list(),
+            },
         )
 
     @callback
