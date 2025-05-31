@@ -203,6 +203,8 @@ class Schedule:
         if self._schedule and self._to_on[0] == self._to_off[-1]:
             self._to_on.pop(0)
             self._to_off.pop(-1)
+        self._to_on.sort()
+        self._to_off.sort()
 
     def is_dynamic(self) -> bool:
         """Check if the schedule contains at least one dynamic time."""

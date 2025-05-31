@@ -493,3 +493,23 @@ def test_next_updates(
         now + datetime.timedelta(hours=4),
         now + datetime.timedelta(days=1, hours=1),
     ]
+
+
+def test_sort_off_timestamps(
+    hass: HomeAssistant,
+) -> None:
+    """Test off calculation correctness when off timestamps requires sorting."""
+    now = datetime.datetime.fromisoformat("2000-01-01 22:00")
+    assert Schedule(
+        hass,
+        [
+            {
+                CONF_FROM: "21:00",
+                CONF_TO: "11:00",
+            },
+            {
+                CONF_FROM: "14:00",
+                CONF_TO: "16:00",
+            },
+        ],
+    ).next_update(now) == now + datetime.timedelta(hours=13)
