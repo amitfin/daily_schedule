@@ -47,6 +47,10 @@ class TimeRange:
             return self.from_ > other.from_
         return self.seconds > other.seconds
 
+    def __hash__(self) -> int:
+        """Return a number unique to this range."""
+        return hash((self._from_offset, self._to_offset))
+
     def containing(self, time: datetime.time) -> bool:
         """Check if the time is inside the range."""
         if self.wrap:

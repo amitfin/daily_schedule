@@ -80,6 +80,21 @@ def test_sort() -> None:
     ]
 
 
+def test_time_range_hash() -> None:
+    """Test hashing function of time_range."""
+    time_range1 = TimeRange(
+        datetime.time.fromisoformat("01:00"), datetime.time.fromisoformat("02:00")
+    )
+    time_range2 = TimeRange(
+        datetime.time.fromisoformat("01:00"), datetime.time.fromisoformat("02:01")
+    )
+    time_range3 = TimeRange(
+        datetime.time.fromisoformat("01:00"), datetime.time.fromisoformat("02:00")
+    )
+    assert hash(time_range1) == hash(time_range3)
+    assert hash(time_range1) != hash(time_range2)
+
+
 @pytest.mark.parametrize(
     ("start", "end", "time", "disabled", "result"),
     [
