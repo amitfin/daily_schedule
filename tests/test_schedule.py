@@ -94,6 +94,7 @@ def test_time_range_hash() -> None:
     assert hash(time_range1) == hash(time_range3)
     assert hash(time_range1) != hash(time_range2)
 
+
 @pytest.mark.parametrize(
     ("start", "end", "time", "disabled", "result"),
     [
