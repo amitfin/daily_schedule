@@ -44,8 +44,44 @@ Each range has `from` and `to`. If the `to` is less than or equal `from` it's tr
 
 There are 3 ways to specify time:
 1. A fixed time (e.g. 12:30).
-2. Sunrise with an optional negative / positive offset.
-3. Sunset with an optional negative / positive offset.
+2. Sunset with an optional negative or positive minutes offset.
+3. Sunrise with an optional negative or positive minutes offset.
+
+## Attributes
+
+The binary sensor has the following attributes:
+1. `Schedule`: the list of `on` time ranges as provided by the user.
+2. `Effective schedule`: the actual `on` time ranges: (1) disabled ranges are ignored, (2) the user-provided ranges are merged and duplications are removed. This list doesn't include overlapping or adjusting ranges.
+3. `Next toggle`: the next time when the binary sensor is going to change its state.
+4. `Next toggles`: a list with the 4 next times when the binary sensor is going to change its state. The 1st element is identical to `Next toggle`.
+
+## `set` Action
+
+`daily_schedule.set` action can be used to configure the time ranges. Here is a YAML-mode example, although it's recommended to use the UI-mode:
+
+```
+action: daily_schedule.set
+data:
+  schedule:
+    - from: "↓-30"
+      to: "22:00"
+target:
+  entity_id: binary_sensor.backyard_lights
+```
+
+The format of `from` and `to` can be one of the 3 options:
+1. ***Absolute time***: a 24h time in [this format](https://docs.python.org/3/library/datetime.html#datetime.time.fromisoformat).
+2. ***Sunset***: start with "↓" and can have an optional positive or negative offset in minutes. For example: "↓", "↓-20", "↓+30".
+3. ***Sunrise***: start with "↑" and can have an optional positive or negative offset in minutes.
+
+Typically, there is no need to use this action directly since it's been used by the [Lovelace card](https://github.com/amitfin/lovelace-daily-schedule-card).
+
+Note: there is no corresponding `get`. The data already exists as attributes:
+
+```
+{{ state_attr('binary_sensor.backyard_lights', 'schedule') }}
+{{ state_attr('binary_sensor.backyard_lights', 'effective_schedule') }}
+```
 
 ## Additional Cards
 
