@@ -31,7 +31,7 @@ from custom_components.daily_schedule.const import (
 
 if TYPE_CHECKING:
     from freezegun.api import FrozenDateTimeFactory
-    from homeassistant.core import HomeAssistant
+    from homeassistant.core import Event, HomeAssistant
 
 
 async def setup_entity(
@@ -307,6 +307,34 @@ async def test_set(hass: HomeAssistant) -> None:
     state = hass.states.get(entity_id)
     assert state
     assert state.attributes[CONF_SCHEDULE] == schedule2
+    await async_cleanup(hass)
+
+
+async def test_set_no_unavailable(hass: HomeAssistant) -> None:
+    """Test that set service doesn't cause temp "unavailable"."""
+    entity_id = f"{Platform.BINARY_SENSOR}.my_test"
+    await setup_entity(hass, "My Test", [])
+
+    states: list[str] = []
+
+    async def event_listener(event: Event) -> None:
+        if event.data.get("entity_id") == entity_id and (
+            new_state := event.data.get("new_state")
+        ):
+            states.append(new_state.state)
+
+    hass.bus.async_listen("state_changed", event_listener)
+
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_SET,
+        {CONF_SCHEDULE: [{CONF_FROM: "00:00", CONF_TO: "00:00"}]},
+        target={ATTR_ENTITY_ID: entity_id},
+    )
+    await hass.async_block_till_done()
+
+    assert states == ["on"]
+
     await async_cleanup(hass)
 
 

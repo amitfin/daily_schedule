@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 import homeassistant.helpers.config_validation as cv
@@ -34,6 +35,18 @@ if TYPE_CHECKING:
 
     from homeassistant.config_entries import ConfigEntry
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+
+@dataclass
+class DailyScheduleRuntimeData:
+    """Daily Schedule runtime data dataclass."""
+
+    entity: DailyScheduleSensor
+
+
+type DailyScheduleConfigEntry = ConfigEntry[DailyScheduleRuntimeData | None]
+
+PARALLEL_UPDATES = 1
 
 
 def remove_micros_and_tz(time: datetime.time) -> str:
@@ -81,7 +94,10 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Initialize config entry."""
-    async_add_entities([DailyScheduleSensor(hass, config_entry)])
+    config_entry.runtime_data = DailyScheduleRuntimeData(
+        DailyScheduleSensor(hass, config_entry)
+    )
+    async_add_entities([config_entry.runtime_data.entity])
     platform = entity_platform.async_get_current_platform()
     platform.async_register_entity_service(SERVICE_SET, SERVICE_SET_SCHEMA, "async_set")
 
@@ -100,18 +116,28 @@ class DailyScheduleSensor(BinarySensorEntity):
         """Initialize object with defaults."""
         self._hass = hass
         self._config_entry = config_entry
-        self._attr_name = config_entry.title
         self._attr_unique_id = config_entry.entry_id
+        self._unsub_update: Callable[[], None] | None = None
+        self._read_config()
+
+    def _read_config(self) -> None:
+        """Get relevant data from the config entry."""
+        self._attr_name = self._config_entry.title
         self._schedule: Schedule = Schedule(
-            hass, config_entry.options.get(CONF_SCHEDULE, [])
+            self._hass, self._config_entry.options.get(CONF_SCHEDULE, [])
         )
         self._attr_extra_state_attributes: MutableMapping[str, Any] = {
             CONF_SCHEDULE: self._schedule.to_list(),
             ATTR_EFFECTIVE_SCHEDULE: self._schedule.to_list_absolute(),
         }
         self._is_dynamic = self._schedule.is_dynamic()
-        self._utc = config_entry.options.get(CONF_UTC, False)
-        self._unsub_update: Callable[[], None] | None = None
+        self._utc = self._config_entry.options.get(CONF_UTC, False)
+
+    def config_update(self) -> None:
+        """Handle config entry update."""
+        self._read_config()
+        self._clean_up_listener()
+        self._update_state()
 
     def _now(self) -> datetime.datetime:
         """Return the current time either as local or UTC, based on configuration."""
