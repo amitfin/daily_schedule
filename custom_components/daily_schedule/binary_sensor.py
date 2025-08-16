@@ -31,7 +31,7 @@ from .const import (
 from .schedule import Schedule
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, MutableMapping
+    from collections.abc import Callable
 
     from homeassistant.config_entries import ConfigEntry
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -126,7 +126,7 @@ class DailyScheduleSensor(BinarySensorEntity):
         self._schedule: Schedule = Schedule(
             self._hass, self._config_entry.options.get(CONF_SCHEDULE, [])
         )
-        self._attr_extra_state_attributes: MutableMapping[str, Any] = {
+        self._attr_extra_state_attributes = {
             CONF_SCHEDULE: self._schedule.to_list(),
             ATTR_EFFECTIVE_SCHEDULE: self._schedule.to_list_absolute(),
         }

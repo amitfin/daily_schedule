@@ -53,6 +53,14 @@ def test_greater_operator(
     ) is result
 
 
+def test_different_object() -> None:
+    """Test comparison of TimeRange with different object."""
+    midnight = datetime.time.fromisoformat("00:00")
+    assert TimeRange(midnight, midnight) != 1
+    with pytest.raises(TypeError):
+        assert TimeRange(midnight, midnight) > 1
+
+
 def test_sort() -> None:
     """Test sorting of TimeRange."""
     time_ranges = [

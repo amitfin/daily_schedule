@@ -37,12 +37,16 @@ class TimeRange:
             else 86400 - self._from_offset + self._to_offset
         )
 
-    def __eq__(self, other: TimeRange) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Compare two TimeRanges."""
+        if not isinstance(other, TimeRange):
+            return NotImplemented
         return self.from_ == other.from_ and self.to == other.to
 
-    def __gt__(self, other: TimeRange) -> bool:
+    def __gt__(self, other: object) -> bool:
         """Compare two TimeRanges."""
+        if not isinstance(other, TimeRange):
+            return NotImplemented
         if self.from_ != other.from_:
             return self.from_ > other.from_
         return self.seconds > other.seconds
@@ -90,7 +94,7 @@ class TimeRangeConfig(TimeRange):
             return None, datetime.time.fromisoformat(value)
 
         if (
-            time := sun.get_astral_event_date(
+            event := sun.get_astral_event_date(
                 hass,
                 SUN_EVENT_SUNRISE if value[0] == SUNRISE_SYMBOL else SUN_EVENT_SUNSET,
             )
@@ -98,7 +102,7 @@ class TimeRangeConfig(TimeRange):
             # Should never happen, but the above call can return None.
             error_message = "Unable to resolve sunrise/sunset time."
             raise IntegrationError(error_message)
-        time = as_local(time).time().replace(microsecond=0, tzinfo=None)
+        time = as_local(event).time().replace(microsecond=0, tzinfo=None)
         offset = int(value[1:]) if len(value) > 1 else 0
 
         if offset == 0:
@@ -255,7 +259,7 @@ class Schedule:
         self, date: datetime.datetime, count: int
     ) -> list[datetime.datetime]:
         """Get list of future updates."""
-        updates = []
+        updates: list[datetime.datetime] = []
         update = self.next_update(date)
         while len(updates) < count and update is not None:
             updates.append(update)

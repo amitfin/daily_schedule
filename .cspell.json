@@ -10,6 +10,7 @@
     "HACS",
     "hass",
     "homeassistant",
+    "mypy",
     "pytest",
     "PYTHONPATH",
     "pytz",
