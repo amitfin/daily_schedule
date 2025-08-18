@@ -35,4 +35,4 @@ jobs:
         run: python3 -m ruff format . --check
 
       - name: mypy
-        run: mypy --strict custom_components/daily_schedule
+        run: python3 -m mypy --strict custom_components/daily_schedule
