@@ -6,6 +6,7 @@ from http import HTTPStatus
 from typing import TYPE_CHECKING
 
 from homeassistant.setup import async_setup_component
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.daily_schedule.const import (
@@ -21,6 +22,7 @@ if TYPE_CHECKING:
     from pytest_homeassistant_custom_component.typing import ClientSessionGenerator
 
 
+@pytest.mark.allowed_logs(["zlib_ng and isal are not available"])
 async def test_diagnostics(
     hass: HomeAssistant,
     hass_client: ClientSessionGenerator,
