@@ -16,6 +16,10 @@
 # See here for more info: https://docs.pytest.org/en/latest/fixture.html (note that
 # pytest includes fixtures OOB which you can use as defined on this page)
 
+import logging
+from itertools import chain
+from typing import Any
+
 import pytest
 
 
@@ -25,3 +29,37 @@ import pytest
 def _auto_enable_custom_integrations(enable_custom_integrations: bool) -> None:  # noqa: ARG001, FBT001
     """Enable loading custom components."""
     return
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_call(item: pytest.Item) -> Any:
+    """Ensure there are no warnings or higher severity log entries."""
+    marker = item.get_closest_marker("allowed_logs")
+    allowed_logs = marker.args[0] if marker and marker.args else ()
+    records: list[logging.LogRecord] = []
+
+    class _Collector(logging.Handler):
+        def emit(self, record: logging.LogRecord) -> None:
+            if record.levelno >= logging.WARNING:
+                records.append(record)
+
+    logger = logging.getLogger()
+    handler = _Collector()
+    logger.addHandler(handler)
+    try:
+        result = yield
+    finally:
+        logger.removeHandler(handler)
+
+    for record in records:
+        message = record.getMessage()
+        if any(
+            message.startswith(allowed_log)
+            for allowed_log in chain(
+                allowed_logs, ["We found a custom integration daily_schedule"]
+            )
+        ):
+            continue
+        pytest.fail(f"Disallowed {record.levelname} log: {message}")
+
+    return result
