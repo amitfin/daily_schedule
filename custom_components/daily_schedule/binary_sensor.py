@@ -21,6 +21,7 @@ from .const import (
     CONF_DISABLED,
     CONF_FROM,
     CONF_SCHEDULE,
+    CONF_SKIP_REVERSED,
     CONF_TO,
     CONF_UTC,
     NEXT_TOGGLES_COUNT,
@@ -123,8 +124,11 @@ class DailyScheduleSensor(BinarySensorEntity):
     def _read_config(self) -> None:
         """Get relevant data from the config entry."""
         self._attr_name = self._config_entry.title
+        self._skip_reversed = self._config_entry.options.get(CONF_SKIP_REVERSED, False)
         self._schedule: Schedule = Schedule(
-            self._hass, self._config_entry.options.get(CONF_SCHEDULE, [])
+            self._hass,
+            self._config_entry.options.get(CONF_SCHEDULE, []),
+            self._skip_reversed,
         )
         self._attr_extra_state_attributes = {
             CONF_SCHEDULE: self._schedule.to_list(),
@@ -167,7 +171,9 @@ class DailyScheduleSensor(BinarySensorEntity):
             self._config_entry,
             options={
                 **self._config_entry.options,
-                CONF_SCHEDULE: Schedule(self._hass, schedule).to_list(),
+                CONF_SCHEDULE: Schedule(
+                    self._hass, schedule, self._skip_reversed
+                ).to_list(),
             },
         )
 
@@ -179,7 +185,9 @@ class DailyScheduleSensor(BinarySensorEntity):
         if self._is_dynamic:
             # Re-resolve sunrise/sunset times.
             self._schedule = Schedule(
-                self._hass, self._attr_extra_state_attributes[CONF_SCHEDULE]
+                self._hass,
+                self._attr_extra_state_attributes[CONF_SCHEDULE],
+                self._skip_reversed,
             )
             self._attr_extra_state_attributes[ATTR_EFFECTIVE_SCHEDULE] = (
                 self._schedule.to_list_absolute()

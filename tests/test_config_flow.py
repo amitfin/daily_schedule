@@ -12,6 +12,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.daily_schedule.const import (
     CONF_FROM,
     CONF_SCHEDULE,
+    CONF_SKIP_REVERSED,
     CONF_TO,
     CONF_UTC,
     DOMAIN,
@@ -39,7 +40,11 @@ async def test_config_flow_no_schedule(hass: HomeAssistant) -> None:
 
     assert result2.get("type") == FlowResultType.CREATE_ENTRY
     assert result2.get("title") == "test"
-    assert result2.get("options") == {CONF_SCHEDULE: [], CONF_UTC: False}
+    assert result2.get("options") == {
+        CONF_SCHEDULE: [],
+        CONF_UTC: False,
+        CONF_SKIP_REVERSED: False,
+    }
 
 
 async def test_config_flow_duplicated(hass: HomeAssistant) -> None:
@@ -82,12 +87,13 @@ async def test_options_flow(hass: HomeAssistant) -> None:
 
     result2 = await hass.config_entries.options.async_configure(
         result["flow_id"],
-        user_input={CONF_UTC: True},
+        user_input={CONF_UTC: True, CONF_SKIP_REVERSED: True},
     )
     assert result2.get("type") == FlowResultType.CREATE_ENTRY
     assert result2.get("data") == {
         CONF_SCHEDULE: [{CONF_FROM: "05:00:00", CONF_TO: "10:00:00"}],
         CONF_UTC: True,
+        CONF_SKIP_REVERSED: True,
     }
 
     config_entry = hass.config_entries.async_entries(DOMAIN)[0]

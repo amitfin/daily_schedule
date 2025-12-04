@@ -13,6 +13,7 @@ CONF_FROM: Final = "from"
 CONF_TO: Final = "to"
 CONF_SCHEDULE: Final = "schedule"
 CONF_UTC: Final = "utc"
+CONF_SKIP_REVERSED: Final = "skip_reversed"
 
 ATTR_EFFECTIVE_SCHEDULE: Final = "effective_schedule"
 ATTR_NEXT_TOGGLE: Final = "next_toggle"

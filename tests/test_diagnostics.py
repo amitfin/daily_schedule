@@ -12,6 +12,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.daily_schedule.const import (
     CONF_FROM,
     CONF_SCHEDULE,
+    CONF_SKIP_REVERSED,
     CONF_TO,
     CONF_UTC,
     DOMAIN,
@@ -36,6 +37,7 @@ async def test_diagnostics(
             },
         ],
         CONF_UTC: True,
+        CONF_SKIP_REVERSED: True,
     }
     config_entry = MockConfigEntry(
         options=config,

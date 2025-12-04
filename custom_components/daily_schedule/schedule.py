@@ -30,10 +30,10 @@ class TimeRange:
         self._from_offset = from_.hour * 3600 + from_.minute * 60 + from_.second
         self.to: datetime.time = to
         self._to_offset = to.hour * 3600 + to.minute * 60 + to.second
-        self.wrap = self.to <= self.from_
+        self.reversed = self.to <= self.from_
         self.seconds = (
             self._to_offset - self._from_offset
-            if not self.wrap
+            if not self.reversed
             else 86400 - self._from_offset + self._to_offset
         )
 
@@ -57,7 +57,7 @@ class TimeRange:
 
     def containing(self, time: datetime.time) -> bool:
         """Check if the time is inside the range."""
-        if self.wrap:
+        if self.reversed:
             return self.from_ <= time or time < self.to
 
         return self.from_ <= time < self.to
@@ -142,7 +142,12 @@ class TimeRangeConfig(TimeRange):
 class Schedule:
     """List of TimeRange."""
 
-    def __init__(self, hass: HomeAssistant, schedule: list[dict[str, Any]]) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        schedule: list[dict[str, Any]],
+        skip_reversed: bool,  # noqa: FBT001
+    ) -> None:
         """Create a list of TimeRanges representing the schedule."""
         self._config = sorted(
             [
@@ -155,6 +160,7 @@ class Schedule:
                 for time_range in schedule
             ]
         )
+        self._skip_reversed = skip_reversed
         self._calculate_schedule()
 
     def _calculate_schedule(self) -> None:
@@ -163,17 +169,19 @@ class Schedule:
 
         # There is nothing to do for a single time range.
         if len(self._config) == 1:
-            if not self._config[0].disabled:
+            if not self._config[0].disabled and (
+                not self._config[0].reversed or not self._skip_reversed
+            ):
                 self._schedule.append(
                     TimeRange(self._config[0].from_, self._config[0].to)
                 )
         else:
-            # Break wrap time ranges into two separate time ranges.
+            # Break reversed time ranges into two separate time ranges.
             schedule = []
             for time_range in self._config:
-                if time_range.disabled:
+                if time_range.disabled or (time_range.reversed and self._skip_reversed):
                     continue
-                if not time_range.wrap or time_range.to == MIDNIGHT:
+                if not time_range.reversed or time_range.to == MIDNIGHT:
                     schedule.append(TimeRange(time_range.from_, time_range.to))
                 else:
                     schedule.append(TimeRange(time_range.from_, MIDNIGHT))

@@ -212,20 +212,32 @@ def test_time_range_to_dict(hass: HomeAssistant, param: dict[str, Any]) -> None:
 
 
 @pytest.mark.parametrize(
-    ("schedule", "time", "result"),
+    ("schedule", "skip_reversed", "time", "result"),
     [
-        ([], "05:00", False),
-        ([{CONF_FROM: "05:00", CONF_TO: "10:00"}], "05:00", True),
-        ([{CONF_FROM: "05:00", CONF_TO: "10:00"}], "10:00", False),
+        ([], False, "05:00", False),
+        ([{CONF_FROM: "05:00", CONF_TO: "10:00"}], False, "05:00", True),
+        ([{CONF_FROM: "05:00", CONF_TO: "10:00"}], False, "10:00", False),
         (
             [
                 {CONF_FROM: "22:00", CONF_TO: "00:00"},
                 {CONF_FROM: "05:00", CONF_TO: "10:00"},
             ],
+            False,
             "23:00",
             True,
         ),
-        ([{CONF_FROM: "00:00", CONF_TO: "00:00", CONF_DISABLED: True}], "12:00", False),
+        (
+            [{CONF_FROM: "00:00", CONF_TO: "00:00", CONF_DISABLED: True}],
+            False,
+            "12:00",
+            False,
+        ),
+        (
+            [{CONF_FROM: "00:00", CONF_TO: "00:00"}],
+            True,
+            "12:00",
+            False,
+        ),
     ],
     ids=[
         "empty",
@@ -233,22 +245,27 @@ def test_time_range_to_dict(hass: HomeAssistant, param: dict[str, Any]) -> None:
         "not contained",
         "2 ranges contained",
         "disabled range",
+        "skip reversed",
     ],
 )
 def test_schedule_containing(
     hass: HomeAssistant,
     schedule: list[dict[str, Any]],
+    skip_reversed: bool,  # noqa: FBT001
     time: str,
     result: bool,  # noqa: FBT001
 ) -> None:
     """Test containing method of Schedule."""
     assert (
-        Schedule(hass, schedule).containing(datetime.time.fromisoformat(time)) is result
+        Schedule(hass, schedule, skip_reversed).containing(
+            datetime.time.fromisoformat(time)
+        )
+        is result
     )
 
 
 @pytest.mark.parametrize(
-    ("schedule", "on", "off"),
+    ("schedule", "skip_reversed", "on", "off"),
     [
         (
             [
@@ -265,6 +282,7 @@ def test_schedule_containing(
                     CONF_TO: "10:11:13",
                 },
             ],
+            False,
             "05:06:07",
             None,
         ),
@@ -279,6 +297,7 @@ def test_schedule_containing(
                     CONF_TO: "10:11:12",
                 },
             ],
+            False,
             "01:00:00",
             "03:00:00",
         ),
@@ -293,6 +312,7 @@ def test_schedule_containing(
                     CONF_TO: "04:05:06",
                 },
             ],
+            False,
             "02:00:00",
             "08:00:00",
         ),
@@ -307,6 +327,7 @@ def test_schedule_containing(
                     CONF_TO: "04:05:06",
                 },
             ],
+            False,
             "00:00:00",
             "05:00:00",
         ),
@@ -317,17 +338,44 @@ def test_schedule_containing(
                     CONF_TO: "00:00:00",
                 },
             ],
+            False,
             "20:00:00",
             "00:00:00",
         ),
+        (
+            [
+                {
+                    CONF_FROM: "07:08:09",
+                    CONF_TO: "01:02:04",
+                },
+                {
+                    CONF_FROM: "01:02:03",
+                    CONF_TO: "04:05:06",
+                },
+            ],
+            True,
+            "02:00:00",
+            "00:00:00",
+        ),
     ],
-    ids=["wrap whole", "warp", "overlap", "overnight_overlap", "sunrise to midnight"],
+    ids=[
+        "wrap whole",
+        "warp",
+        "overlap",
+        "overnight_overlap",
+        "sunrise to midnight",
+        "skip_reversed",
+    ],
 )
 def test_complex_schedule(
-    hass: HomeAssistant, schedule: list[dict[str, Any]], on: str | None, off: str | None
+    hass: HomeAssistant,
+    schedule: list[dict[str, Any]],
+    skip_reversed: bool,  # noqa: FBT001
+    on: str | None,
+    off: str | None,
 ) -> None:
     """Test complex schedule."""
-    test = Schedule(hass, schedule)
+    test = Schedule(hass, schedule, skip_reversed)
     if on is not None:
         assert test.containing(datetime.time.fromisoformat(on)) is True
     if off is not None:
@@ -359,7 +407,7 @@ def test_complex_schedule(
 )
 def test_to_list(hass: HomeAssistant, schedule: list[dict[str, Any]]) -> None:
     """Test schedule to string list function."""
-    str_list = Schedule(hass, schedule).to_list()
+    str_list = Schedule(hass, schedule, skip_reversed=False).to_list()
     schedule.sort(key=lambda time_range: time_range[CONF_FROM])
     assert str_list == schedule
 
@@ -397,7 +445,7 @@ def test_merge(
     hass: HomeAssistant, schedule: list[dict[str, Any]], expected: list[dict[str, Any]]
 ) -> None:
     """Test merging logic."""
-    assert Schedule(hass, schedule).to_list_absolute() == expected
+    assert Schedule(hass, schedule, skip_reversed=False).to_list_absolute() == expected
 
 
 @pytest.mark.parametrize(
@@ -436,7 +484,7 @@ def test_dynamic(
     expected: bool,  # noqa: FBT001
 ) -> None:
     """Test is_dynamic logic."""
-    assert Schedule(hass, schedule).is_dynamic() == expected
+    assert Schedule(hass, schedule, skip_reversed=False).is_dynamic() == expected
 
 
 @pytest.mark.parametrize(
@@ -485,6 +533,7 @@ def test_next_update(
             }
             for (from_sec_offset, to_sec_offset, disabled) in schedule
         ],
+        skip_reversed=False,
     ).next_update(now) == (
         now + datetime.timedelta(seconds=next_update_sec_offset)
         if next_update_sec_offset is not None
@@ -509,6 +558,7 @@ def test_next_updates(
                 CONF_TO: "04:00",
             },
         ],
+        skip_reversed=False,
     ).next_updates(now, 5) == [
         now + datetime.timedelta(hours=1),
         now + datetime.timedelta(hours=2),
@@ -535,4 +585,5 @@ def test_sort_off_timestamps(
                 CONF_TO: "16:00",
             },
         ],
+        skip_reversed=False,
     ).next_update(now) == now + datetime.timedelta(hours=13)

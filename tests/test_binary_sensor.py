@@ -21,6 +21,7 @@ from custom_components.daily_schedule.const import (
     ATTR_NEXT_TOGGLES,
     CONF_FROM,
     CONF_SCHEDULE,
+    CONF_SKIP_REVERSED,
     CONF_TO,
     CONF_UTC,
     DOMAIN,
@@ -39,10 +40,15 @@ async def setup_entity(
     name: str,
     schedule: list[dict[str, Any]],
     utc: bool = False,  # noqa: FBT001, FBT002
+    skip_reversed: bool = False,  # noqa: FBT001, FBT002
 ) -> None:
     """Create a new entity by adding a config entry."""
     config_entry = MockConfigEntry(
-        options={CONF_SCHEDULE: schedule, CONF_UTC: utc},
+        options={
+            CONF_SCHEDULE: schedule,
+            CONF_UTC: utc,
+            CONF_SKIP_REVERSED: skip_reversed,
+        },
         domain=DOMAIN,
         title=name,
     )
@@ -338,10 +344,10 @@ async def test_set_no_unavailable(hass: HomeAssistant) -> None:
     await async_cleanup(hass)
 
 
-async def test_set_preserves_utc(hass: HomeAssistant) -> None:
-    """Test set service doesn't change UTC option."""
+async def test_set_preserves_options(hass: HomeAssistant) -> None:
+    """Test set service doesn't change other options."""
     entity_id = f"{Platform.BINARY_SENSOR}.my_test"
-    await setup_entity(hass, "My Test", [], utc=True)
+    await setup_entity(hass, "My Test", [], utc=True, skip_reversed=True)
     await hass.services.async_call(
         DOMAIN,
         SERVICE_SET,
@@ -349,7 +355,8 @@ async def test_set_preserves_utc(hass: HomeAssistant) -> None:
         target={ATTR_ENTITY_ID: entity_id},
     )
     await hass.async_block_till_done()
-    assert hass.config_entries.async_entries(DOMAIN)[0].options[CONF_UTC] is True
+    for option in (CONF_UTC, CONF_SKIP_REVERSED):
+        assert hass.config_entries.async_entries(DOMAIN)[0].options[option] is True
     await async_cleanup(hass)
 
 
@@ -549,5 +556,39 @@ async def test_dynamic_update_entire_day(
     assert state.attributes[ATTR_EFFECTIVE_SCHEDULE] == [
         {CONF_FROM: "05:53:21", CONF_TO: "05:53:21"}
     ]
+
+    await async_cleanup(hass)
+
+
+async def test_skip_reversed(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Test skip reversed option."""
+    freezer.move_to("2025-03-12T00:00:00")
+    hass.config.latitude = 32.072
+    hass.config.longitude = 34.879
+    await hass.config.async_set_time_zone("Asia/Jerusalem")
+    entity_id = f"{Platform.BINARY_SENSOR}.my_test"
+    await setup_entity(
+        hass,
+        "My Test",
+        [{CONF_FROM: SUNRISE_SYMBOL, CONF_TO: "06:00:00"}],
+        skip_reversed=True,
+    )
+
+    state = hass.states.get(entity_id)
+    assert state
+    assert state.attributes[ATTR_EFFECTIVE_SCHEDULE] == [
+        {CONF_FROM: "05:54:37", CONF_TO: "06:00:00"}
+    ]
+
+    freezer.move_to("2025-04-01T00:00:00")
+    async_fire_time_changed(hass, freezer.time_to_freeze)
+    await hass.async_block_till_done()
+
+    state = hass.states.get(entity_id)
+    assert state
+    assert state.attributes[ATTR_EFFECTIVE_SCHEDULE] == []
 
     await async_cleanup(hass)

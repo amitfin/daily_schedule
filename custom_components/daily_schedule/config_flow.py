@@ -14,7 +14,7 @@ from homeassistant.const import CONF_NAME
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 
-from .const import CONF_SCHEDULE, CONF_UTC, DOMAIN
+from .const import CONF_SCHEDULE, CONF_SKIP_REVERSED, CONF_UTC, DOMAIN
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigFlowResult
@@ -23,6 +23,7 @@ CONFIG_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_NAME): selector.TextSelector(),
         vol.Required(CONF_UTC, default=False): selector.BooleanSelector(),
+        vol.Required(CONF_SKIP_REVERSED, default=False): selector.BooleanSelector(),
     }
 )
 
@@ -49,7 +50,11 @@ class DailyScheduleConfigFlow(ConfigFlow, domain=DOMAIN):
                 return self.async_create_entry(
                     title=user_input[CONF_NAME],
                     data={},
-                    options={CONF_SCHEDULE: [], CONF_UTC: user_input[CONF_UTC]},
+                    options={
+                        CONF_SCHEDULE: [],
+                        CONF_UTC: user_input[CONF_UTC],
+                        CONF_SKIP_REVERSED: user_input[CONF_SKIP_REVERSED],
+                    },
                 )
 
         return self.async_show_form(
@@ -79,6 +84,7 @@ class OptionsFlowHandler(OptionsFlow):
                 data={
                     CONF_SCHEDULE: self.config_entry.options.get(CONF_SCHEDULE, []),
                     CONF_UTC: user_input[CONF_UTC],
+                    CONF_SKIP_REVERSED: user_input[CONF_SKIP_REVERSED],
                 },
             )
 
@@ -88,6 +94,12 @@ class OptionsFlowHandler(OptionsFlow):
                 {
                     vol.Required(
                         CONF_UTC, default=self.config_entry.options.get(CONF_UTC, False)
+                    ): selector.BooleanSelector(),
+                    vol.Required(
+                        CONF_SKIP_REVERSED,
+                        default=self.config_entry.options.get(
+                            CONF_SKIP_REVERSED, False
+                        ),
                     ): selector.BooleanSelector(),
                 }
             ),
