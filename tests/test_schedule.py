@@ -173,9 +173,6 @@ async def test_dynamic_range(  # noqa: PLR0913
 ) -> None:
     """Test dynamic from and to."""
     freezer.move_to("2025-03-12T00:00:00")
-    hass.config.latitude = 32.072
-    hass.config.longitude = 34.879
-    await hass.config.async_set_time_zone("Asia/Jerusalem")
     test = TimeRangeConfig(hass, from_, to, False)  # noqa: FBT003
     assert test.to_dict() == {CONF_FROM: from_string, CONF_TO: to_string}
     assert test.to_dict_absolute() == {CONF_FROM: from_absolute, CONF_TO: to_absolute}

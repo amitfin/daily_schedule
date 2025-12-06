@@ -18,9 +18,12 @@
 
 import logging
 from itertools import chain
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
 
 
 # This fixture enables loading custom integrations in all tests.
@@ -29,6 +32,14 @@ import pytest
 def _auto_enable_custom_integrations(enable_custom_integrations: bool) -> None:  # noqa: ARG001, FBT001
     """Enable loading custom components."""
     return
+
+
+@pytest.fixture(autouse=True)
+async def _auto_set_location_and_time_zone(hass: HomeAssistant) -> None:
+    """Enable loading custom components."""
+    hass.config.latitude = 32.072
+    hass.config.longitude = 34.879
+    await hass.config.async_set_time_zone("Asia/Jerusalem")
 
 
 @pytest.hookimpl(hookwrapper=True)

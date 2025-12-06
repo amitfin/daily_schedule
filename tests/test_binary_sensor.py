@@ -426,6 +426,7 @@ async def test_utc(
 ) -> None:
     """Test utc schedule."""
     utc_time = datetime.datetime(2023, 5, 30, 12, tzinfo=pytz.utc)  # 12pm
+    await hass.config.async_set_time_zone("US/Pacific")
     local_time = utc_time.astimezone(pytz.timezone("US/Pacific"))  # 4am
     offset = utc_time.timestamp() - local_time.replace(tzinfo=None).timestamp()  # 8h
     freezer.move_to(local_time)
@@ -481,9 +482,6 @@ async def test_dynamic_update(
 ) -> None:
     """Test dynamic update."""
     freezer.move_to("2025-03-12T00:00:00Z-02:00")
-    hass.config.latitude = 32.072
-    hass.config.longitude = 34.879
-    await hass.config.async_set_time_zone("Asia/Jerusalem")
     entity_id = f"{Platform.BINARY_SENSOR}.my_test"
     await setup_entity(
         hass, "My Test", [{CONF_FROM: SUNRISE_SYMBOL, CONF_TO: SUNSET_SYMBOL}]
@@ -532,9 +530,6 @@ async def test_dynamic_update_entire_day(
 ) -> None:
     """Test dynamic update with an entire day range."""
     freezer.move_to("2025-03-12T00:00:00")
-    hass.config.latitude = 32.072
-    hass.config.longitude = 34.879
-    await hass.config.async_set_time_zone("Asia/Jerusalem")
     entity_id = f"{Platform.BINARY_SENSOR}.my_test"
     await setup_entity(
         hass, "My Test", [{CONF_FROM: SUNRISE_SYMBOL, CONF_TO: SUNRISE_SYMBOL}]
@@ -566,9 +561,6 @@ async def test_skip_reversed(
 ) -> None:
     """Test skip reversed option."""
     freezer.move_to("2025-03-12T00:00:00")
-    hass.config.latitude = 32.072
-    hass.config.longitude = 34.879
-    await hass.config.async_set_time_zone("Asia/Jerusalem")
     entity_id = f"{Platform.BINARY_SENSOR}.my_test"
     await setup_entity(
         hass,
