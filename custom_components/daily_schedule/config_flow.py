@@ -74,7 +74,7 @@ class OptionsFlowHandler(OptionsFlow):
     def __init__(self, config_entry: ConfigEntry) -> None:
         """Initialize options flow."""
         if "config_entry" not in dir(self):
-            self.config_entry = config_entry
+            self.config_entry = config_entry  # type: ignore  # noqa: PGH003
 
     async def async_step_init(self, user_input: dict[str, Any]) -> ConfigFlowResult:
         """Handle an options flow."""
