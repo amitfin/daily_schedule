@@ -9,7 +9,6 @@
                 "description": "Vytvorte binárny senzor, ktorý sa zapne podľa denného plánu.",
                 "data": {
                     "name": "Názov",
-                    "add_range": "Pridajte časový rozsah",
                     "utc": "Čas UTC namiesto miestneho času (ak si nie ste istý, nepoužívajte ho)"
                 }
             }

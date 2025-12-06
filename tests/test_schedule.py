@@ -230,10 +230,16 @@ def test_time_range_to_dict(hass: HomeAssistant, param: dict[str, Any]) -> None:
             False,
         ),
         (
-            [{CONF_FROM: "00:00", CONF_TO: "00:00"}],
+            [{CONF_FROM: SUNRISE_SYMBOL, CONF_TO: "00:00"}],
             True,
             "12:00",
             False,
+        ),
+        (
+            [{CONF_FROM: "06:00", CONF_TO: "00:00"}],
+            True,
+            "12:00",
+            True,
         ),
     ],
     ids=[
@@ -243,6 +249,7 @@ def test_time_range_to_dict(hass: HomeAssistant, param: dict[str, Any]) -> None:
         "2 ranges contained",
         "disabled range",
         "skip reversed",
+        "skip reversed absolute (not skipped)",
     ],
 )
 def test_schedule_containing(
@@ -342,17 +349,17 @@ def test_schedule_containing(
         (
             [
                 {
-                    CONF_FROM: "07:08:09",
-                    CONF_TO: "01:02:04",
+                    CONF_FROM: SUNRISE_SYMBOL,
+                    CONF_TO: "02:00",
                 },
                 {
-                    CONF_FROM: "01:02:03",
-                    CONF_TO: "04:05:06",
+                    CONF_FROM: "03:00",
+                    CONF_TO: "01:00",
                 },
             ],
             True,
-            "02:00:00",
             "00:00:00",
+            "01:00:00",
         ),
     ],
     ids=[

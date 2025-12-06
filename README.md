@@ -53,7 +53,7 @@ Or, in the Home Assistant UI go through the following path:
 Each range has `from` and `to`. If the `to` is less than or equal `from` it's treated as time in the following day. One interesting case is when `from` equals `to`. This type of range covers the whole day (always on).
 
 There are 3 ways to specify time:
-1. A fixed time (e.g. 12:30).
+1. An absolute time (e.g. 12:30).
 2. Sunset with an optional negative or positive minutes offset.
 3. Sunrise with an optional negative or positive minutes offset.
 
@@ -108,11 +108,12 @@ active_state: 'off'
 ## UTC Option
 
 When UTC option is set (not the default), the time should be expressed in [UTC](https://en.wikipedia.org/wiki/Coordinated_Universal_Time) instead of local time. This option can be used when absolute time is needed, which is not impacted by daylight saving changes throughout the year.
-This is an advanced option that should not be used in the majority of the use cases. It should be used only if there is a very concrete reason to do so.
+This is an advanced option that should not be used in the majority of the use cases. It should be used only if there is a very concrete reason to do so. This option should not be used when sunrise or sunset are used since they are resolved by using the local time zone.
 
 ## Skip-Reversed Option
 
-When enabled (disabled by default), this option ignores any time range where the `to` time is earlier than or equal to the `from` time. This behavior is dynamic. For example, a range defined as sunrise → 7:00 AM may become reversed during parts of the year if sunrise occurs after 7:00 AM. In such cases, the range is applied only when sunrise is earlier than 7:00 AM, and automatically skipped when sunrise is at 7:00 AM or later.
+When enabled (disabled by default), this option ignores any time range with sunrise or sunset where the `to` time is earlier than or equal to the `from` time. This behavior is dynamic. For example, a range defined as sunrise → 7:00 AM may become reversed during parts of the year if sunrise occurs after 7:00 AM. In such cases, the range is applied only when sunrise is earlier than 7:00 AM, and automatically skipped when sunrise is at 7:00 AM or later.
+A time range with absolute `from` and `to` times is never skipped, even if it's reversed and this option is enabled. Such a time range should be deleted or disabled manually if it's not needed.
 
 ## Removing the Integration
 

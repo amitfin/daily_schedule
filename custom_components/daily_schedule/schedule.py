@@ -170,7 +170,9 @@ class Schedule:
         # There is nothing to do for a single time range.
         if len(self._config) == 1:
             if not self._config[0].disabled and (
-                not self._config[0].reversed or not self._skip_reversed
+                not self._skip_reversed
+                or not self._config[0].reversed
+                or not self._config[0].is_dynamic()
             ):
                 self._schedule.append(
                     TimeRange(self._config[0].from_, self._config[0].to)
@@ -179,7 +181,11 @@ class Schedule:
             # Break reversed time ranges into two separate time ranges.
             schedule = []
             for time_range in self._config:
-                if time_range.disabled or (time_range.reversed and self._skip_reversed):
+                if time_range.disabled or (
+                    self._skip_reversed
+                    and time_range.reversed
+                    and time_range.is_dynamic()
+                ):
                     continue
                 if not time_range.reversed or time_range.to == MIDNIGHT:
                     schedule.append(TimeRange(time_range.from_, time_range.to))
