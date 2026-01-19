@@ -22,8 +22,6 @@ if TYPE_CHECKING:
 CONFIG_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_NAME): selector.TextSelector(),
-        vol.Required(CONF_UTC, default=False): selector.BooleanSelector(),
-        vol.Required(CONF_SKIP_REVERSED, default=False): selector.BooleanSelector(),
     }
 )
 
@@ -50,11 +48,7 @@ class DailyScheduleConfigFlow(ConfigFlow, domain=DOMAIN):
                 return self.async_create_entry(
                     title=user_input[CONF_NAME],
                     data={},
-                    options={
-                        CONF_SCHEDULE: [],
-                        CONF_UTC: user_input[CONF_UTC],
-                        CONF_SKIP_REVERSED: user_input[CONF_SKIP_REVERSED],
-                    },
+                    options={CONF_SCHEDULE: []},
                 )
 
         return self.async_show_form(

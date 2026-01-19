@@ -8,9 +8,7 @@
         "title": "Add Daily Schedule Sensor",
         "description": "Create a binary sensor which turns on according to a daily schedule.",
         "data": {
-          "name": "Name",
-          "utc": "Use UTC rather than the local time zone (don't use if you're unsure)",
-          "skip_reversed": "Skip ranges with sunrise or sunset when 'to' is earlier than or equal to 'from' (don't use if you're unsure)"
+          "name": "Name"
         }
       }
     }
