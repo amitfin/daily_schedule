@@ -6,6 +6,7 @@ import datetime
 from typing import TYPE_CHECKING, Any
 from unittest.mock import Mock, patch
 
+import homeassistant.util.dt as dt_util
 import pytest
 from homeassistant.exceptions import IntegrationError
 
@@ -543,6 +544,27 @@ def test_next_update(
         if next_update_sec_offset is not None
         else None
     )
+
+
+def test_next_update_dst_gap(hass: HomeAssistant) -> None:
+    """Test next update does not fall into a DST gap."""
+    tz = dt_util.get_time_zone("Asia/Jerusalem")
+    assert tz is not None
+    now = datetime.datetime(2025, 3, 28, 1, 30, tzinfo=tz)
+
+    next_update = Schedule(
+        hass,
+        [
+            {
+                CONF_FROM: "02:30:45.67",
+                CONF_TO: "03:30:00",
+            },
+        ],
+        skip_reversed=False,
+    ).next_update(now)
+
+    assert next_update is not None
+    assert next_update == datetime.datetime(2025, 3, 28, 3, 0, tzinfo=tz)
 
 
 def test_next_updates(

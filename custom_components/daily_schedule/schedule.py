@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
 MIDNIGHT = datetime.time()
+MINUTE = datetime.timedelta(minutes=1)
 
 
 class TimeRange:
@@ -245,13 +246,13 @@ class Schedule:
         return [time_range.to_dict() for time_range in self._schedule]
 
     def next_update(self, date: datetime.datetime) -> datetime.datetime | None:
-        """Schedule a timer for the point when the state should be changed."""
+        """Calculate the next date and time when the state is going to change."""
         if not self._schedule:
             return None
 
-        timestamps = self._to_off if self.containing(date.time()) else self._to_on
-        if not timestamps:
-            # If time ranges cover the entire day (the subtraction result is empty).
+        if not (
+            timestamps := self._to_off if self.containing(date.time()) else self._to_on
+        ):
             return None
 
         time = date.time()
@@ -261,13 +262,25 @@ class Schedule:
         # Find the smallest timestamp which is bigger than time.
         for current in timestamps:
             if prev <= time < current:
-                return datetime.datetime.combine(today, current, tzinfo=date.tzinfo)
+                result = datetime.datetime.combine(today, current, tzinfo=date.tzinfo)
+                break
             prev = current
 
         # Time is bigger than all timestamps. Use tomorrow's 1st timestamp.
-        return datetime.datetime.combine(
-            today + datetime.timedelta(days=1), timestamps[0], tzinfo=date.tzinfo
-        )
+        else:
+            result = datetime.datetime.combine(
+                today + datetime.timedelta(days=1),
+                timestamps[0],
+                tzinfo=date.tzinfo,
+            )
+
+        # If the time is invalid due to DST transition, find the next valid time.
+        # We check if the time exists by converting it to UTC and back.
+        if result.tzinfo:
+            while result != result.astimezone(datetime.UTC).astimezone(result.tzinfo):
+                result = result.replace(second=0, microsecond=0) + MINUTE
+
+        return result
 
     def next_updates(
         self, date: datetime.datetime, count: int
