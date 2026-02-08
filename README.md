@@ -65,6 +65,12 @@ The binary sensor has the following attributes:
 3. `Next toggle`: the next time when the binary sensor is going to change its state.
 4. `Next toggles`: a list with the 4 next times when the binary sensor is going to change its state. The 1st element is identical to `Next toggle`.
 
+## Daylight Saving Time Handling
+
+When the local timezone transitions for daylight saving time (DST), the logic handles edge cases explicitly:
+1. **Forward gaps (non-existent times):** If the next toggle falls into a missing local time, it is advanced until a valid local time is reached. For example, when DST starts the clock can jumps from `01:59` to `03:00`. If the schedule has a toggle at `02:30`, the returned toggle will be `03:00` instead.
+2. **Fall-back ambiguity (repeated times):** If a toggle lands in a repeated hour, the logic preserves the correct [`fold`](https://docs.python.org/3/library/datetime.html#datetime.datetime.fold). For example, when DST ends the hour from `01:00` to `01:59` can repeat twice. If the schedule has a single range  `00:30 - 01:30` and the time is `00:00`, the next 4 toggles will be `00:30` (`on`, `fold=0`), `01:30` (`off`, `fold=0`), `01:00` (`on`, `fold=1`), `01:30` (`off`, `fold=1`).
+
 ## `set` Action
 
 `daily_schedule.set` action can be used to configure the time ranges. Here is an example:

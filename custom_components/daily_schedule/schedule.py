@@ -274,13 +274,64 @@ class Schedule:
                 tzinfo=date.tzinfo,
             )
 
-        # If the time is invalid due to DST transition, find the next valid time.
+        return self._handle_dst(date, result)
+
+    def _handle_dst(
+        self, date: datetime.datetime, result: datetime.datetime
+    ) -> datetime.datetime:
+        """Handle DST transitions."""
+        if result.tzinfo is None:
+            return result
+
+        # Handle non-existent (imaginary) time due to forward jump, e.g. 2am => 3am.
         # We check if the time exists by converting it to UTC and back.
-        if result.tzinfo:
+        if result != result.astimezone(datetime.UTC).astimezone(result.tzinfo):
+            # Find the next valid minute (DST uses minute bounds).
+            result = result.replace(second=0, microsecond=0)
             while result != result.astimezone(datetime.UTC).astimezone(result.tzinfo):
-                result = result.replace(second=0, microsecond=0) + MINUTE
+                result += MINUTE
+            return result
+
+        # Handle ambiguous time (fall back) due to backward jump, e.g. 2am => 1am.
+        # If we are at "fold=0", but "fold=1" has an earlier update, use it instead.
+        if (
+            (old_offset := date.utcoffset()) is not None
+            and (new_offset := result.utcoffset()) is not None
+            # If time goes back between now and next update.
+            and old_offset > new_offset
+            # Get the beginning of "fold=1".
+            and (fold1_start := self._fold1_start(date, result)) is not None
+            # Find the 1st update from the beginning of "fold=1".
+            and (fold1_update := self.next_update(fold1_start)) is not None
+        ):
+            # Use the earlier update.
+            return min(result, fold1_update)
+
+        # Preserve "fold=1" if needed.
+        # We check DST boundary is not crossed by comparing offsets with "fold=0".
+        if date.fold == 1 and date.replace(fold=0).utcoffset() == result.utcoffset():
+            return result.replace(fold=1)
 
         return result
+
+    def _fold1_start(
+        self, date: datetime.datetime, upper_bound: datetime.datetime
+    ) -> datetime.datetime | None:
+        """Get the beginning of "fold=1" time range for the given date."""
+        # Get the transition from "fold=0" to "fold=1".
+        transition = date.replace(second=0, microsecond=0)
+        if (old_offset := date.utcoffset()) is None:
+            return None  # pragma: no cover
+
+        while (new_offset := transition.utcoffset()) == old_offset:
+            transition += MINUTE
+            if transition > upper_bound:  # For safety, should never happen.
+                return None  # pragma: no cover
+        if new_offset is None:
+            return None  # pragma: no cover
+
+        # Return the "fold=1" start.
+        return (transition + new_offset - old_offset).replace(fold=1)
 
     def next_updates(
         self, date: datetime.datetime, count: int

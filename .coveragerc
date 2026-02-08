@@ -1,4 +1,5 @@
 [report]
 exclude_lines =
+    pragma: no cover
     if TYPE_CHECKING:
     self.config_entry = config_entry

@@ -27,6 +27,9 @@ if TYPE_CHECKING:
     from freezegun.api import FrozenDateTimeFactory
     from homeassistant.core import HomeAssistant
 
+TZ_IL = dt_util.get_time_zone("Asia/Jerusalem")
+assert TZ_IL is not None
+
 
 @pytest.mark.parametrize(
     ("from1", "to1", "from2", "to2", "result"),
@@ -546,25 +549,210 @@ def test_next_update(
     )
 
 
-def test_next_update_dst_gap(hass: HomeAssistant) -> None:
-    """Test next update does not fall into a DST gap."""
-    tz = dt_util.get_time_zone("Asia/Jerusalem")
-    assert tz is not None
-    now = datetime.datetime(2025, 3, 28, 1, 30, tzinfo=tz)
-
-    next_update = Schedule(
-        hass,
-        [
-            {
-                CONF_FROM: "02:30:45.67",
-                CONF_TO: "03:30:00",
-            },
-        ],
-        skip_reversed=False,
-    ).next_update(now)
-
-    assert next_update is not None
-    assert next_update == datetime.datetime(2025, 3, 28, 3, 0, tzinfo=tz)
+@pytest.mark.parametrize(
+    ("schedule", "now", "updates"),
+    [
+        (
+            [
+                {
+                    CONF_FROM: "01:15:00",
+                    CONF_TO: "01:45:00",
+                },
+                {
+                    CONF_FROM: "02:15:00",
+                    CONF_TO: "02:45:00",
+                },
+            ],
+            datetime.datetime(2024, 10, 27, 0, 30, tzinfo=TZ_IL),
+            [
+                datetime.datetime(2024, 10, 27, 1, 15, tzinfo=TZ_IL, fold=0),
+                datetime.datetime(2024, 10, 27, 1, 45, tzinfo=TZ_IL, fold=0),
+                datetime.datetime(2024, 10, 27, 1, 15, tzinfo=TZ_IL, fold=1),
+                datetime.datetime(2024, 10, 27, 1, 45, tzinfo=TZ_IL, fold=1),
+                datetime.datetime(2024, 10, 27, 2, 15, tzinfo=TZ_IL, fold=0),
+            ],
+        ),
+        (
+            [
+                {
+                    CONF_FROM: "00:45:00",
+                    CONF_TO: "02:15:00",
+                },
+            ],
+            datetime.datetime(2024, 10, 27, 0, 30, tzinfo=TZ_IL),
+            [
+                datetime.datetime(2024, 10, 27, 0, 45, tzinfo=TZ_IL, fold=0),
+                datetime.datetime(2024, 10, 27, 2, 15, tzinfo=TZ_IL, fold=0),
+            ],
+        ),
+        (
+            [
+                {
+                    CONF_FROM: "00:45:00",
+                    CONF_TO: "01:15:00",
+                },
+            ],
+            datetime.datetime(2024, 10, 27, 0, 30, tzinfo=TZ_IL),
+            [
+                datetime.datetime(2024, 10, 27, 0, 45, tzinfo=TZ_IL, fold=0),
+                datetime.datetime(2024, 10, 27, 1, 15, tzinfo=TZ_IL, fold=0),
+            ],
+        ),
+        (
+            [
+                {
+                    CONF_FROM: "01:45:00",
+                    CONF_TO: "02:15:00",
+                },
+            ],
+            datetime.datetime(2024, 10, 27, 0, 30, tzinfo=TZ_IL),
+            [
+                datetime.datetime(2024, 10, 27, 1, 45, tzinfo=TZ_IL, fold=0),
+                datetime.datetime(2024, 10, 27, 1, 45, tzinfo=TZ_IL, fold=1),
+                datetime.datetime(2024, 10, 27, 2, 15, tzinfo=TZ_IL, fold=0),
+            ],
+        ),
+        (
+            [
+                {
+                    CONF_FROM: "01:15:00",
+                    CONF_TO: "01:45:00",
+                },
+            ],
+            datetime.datetime(2024, 10, 27, 1, 30, tzinfo=TZ_IL, fold=1),
+            [
+                datetime.datetime(2024, 10, 27, 1, 45, tzinfo=TZ_IL, fold=1),
+            ],
+        ),
+        (
+            [
+                {
+                    CONF_FROM: "02:30:00",
+                    CONF_TO: "03:30:00",
+                },
+            ],
+            datetime.datetime(2025, 3, 28, 1, 30, tzinfo=TZ_IL),
+            [
+                datetime.datetime(2025, 3, 28, 3, 0, tzinfo=TZ_IL),
+                datetime.datetime(2025, 3, 28, 3, 30, tzinfo=TZ_IL),
+            ],
+        ),
+        (
+            [
+                {
+                    CONF_FROM: "01:30:00",
+                    CONF_TO: "03:30:00",
+                },
+            ],
+            datetime.datetime(2025, 3, 28, 1, 0, tzinfo=TZ_IL),
+            [
+                datetime.datetime(2025, 3, 28, 1, 30, tzinfo=TZ_IL),
+                datetime.datetime(2025, 3, 28, 3, 30, tzinfo=TZ_IL),
+            ],
+        ),
+        (
+            [
+                {
+                    CONF_FROM: "02:30:45.67",
+                    CONF_TO: "03:30:00",
+                },
+            ],
+            datetime.datetime(2025, 3, 28, 1, 30, tzinfo=TZ_IL),
+            [
+                datetime.datetime(2025, 3, 28, 3, 0, tzinfo=TZ_IL),
+            ],
+        ),
+        (
+            [
+                {
+                    CONF_FROM: "00:45:00",
+                    CONF_TO: "01:30:00",
+                },
+            ],
+            datetime.datetime(2024, 10, 27, 1, 0, tzinfo=TZ_IL, fold=1),
+            [
+                datetime.datetime(2024, 10, 27, 1, 30, tzinfo=TZ_IL, fold=1),
+            ],
+        ),
+        (
+            [
+                {
+                    CONF_FROM: "01:15:30",
+                    CONF_TO: "01:45:30",
+                },
+                {
+                    CONF_FROM: "02:15:00",
+                    CONF_TO: "02:45:00",
+                },
+            ],
+            datetime.datetime(2024, 10, 27, 0, 30, tzinfo=TZ_IL),
+            [
+                datetime.datetime(2024, 10, 27, 1, 15, 30, tzinfo=TZ_IL, fold=0),
+                datetime.datetime(2024, 10, 27, 1, 45, 30, tzinfo=TZ_IL, fold=0),
+                datetime.datetime(2024, 10, 27, 1, 15, 30, tzinfo=TZ_IL, fold=1),
+                datetime.datetime(2024, 10, 27, 1, 45, 30, tzinfo=TZ_IL, fold=1),
+                datetime.datetime(2024, 10, 27, 2, 15, tzinfo=TZ_IL, fold=0),
+            ],
+        ),
+        (
+            [
+                {
+                    CONF_FROM: "23:30:00",
+                    CONF_TO: "01:30:00",
+                },
+            ],
+            datetime.datetime(2024, 10, 26, 23, 0, tzinfo=TZ_IL),
+            [
+                datetime.datetime(2024, 10, 26, 23, 30, tzinfo=TZ_IL),
+                datetime.datetime(2024, 10, 27, 1, 30, tzinfo=TZ_IL, fold=0),
+            ],
+        ),
+        (
+            [
+                {
+                    CONF_FROM: "00:30:00",
+                    CONF_TO: "01:00:00",
+                },
+                {
+                    CONF_FROM: "03:10:00",
+                    CONF_TO: "03:20:00",
+                },
+            ],
+            datetime.datetime(2025, 3, 28, 0, 0, tzinfo=TZ_IL),
+            [
+                datetime.datetime(2025, 3, 28, 0, 30, tzinfo=TZ_IL),
+                datetime.datetime(2025, 3, 28, 1, 0, tzinfo=TZ_IL),
+                datetime.datetime(2025, 3, 28, 3, 10, tzinfo=TZ_IL),
+                datetime.datetime(2025, 3, 28, 3, 20, tzinfo=TZ_IL),
+            ],
+        ),
+    ],
+    ids=[
+        "inside fold1",
+        "covering fold1",
+        "enter fold1",
+        "exit fold1",
+        "now in fold1",
+        "gap inside",
+        "gap spanning",
+        "gap minute rounding",
+        "ambiguous to fold1",
+        "ambiguous seconds",
+        "cross midnight fall back",
+        "gap interleaved",
+    ],
+)
+def test_next_update_dst(
+    hass: HomeAssistant,
+    schedule: list[Any],
+    now: datetime.datetime,
+    updates: list[datetime.datetime],
+) -> None:
+    """Test next update during DST transitions."""
+    assert (
+        Schedule(hass, schedule, skip_reversed=False).next_updates(now, len(updates))
+        == updates
+    )
 
 
 def test_next_updates(
