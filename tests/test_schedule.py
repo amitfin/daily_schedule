@@ -611,6 +611,8 @@ def test_next_update(
             [
                 datetime.datetime(2024, 10, 27, 0, 45, tzinfo=TZ_IL, fold=0),
                 datetime.datetime(2024, 10, 27, 1, 15, tzinfo=TZ_IL, fold=0),
+                datetime.datetime(2024, 10, 27, 1, 0, tzinfo=TZ_IL, fold=1),
+                datetime.datetime(2024, 10, 27, 1, 15, tzinfo=TZ_IL, fold=1),
             ],
         ),
         (
