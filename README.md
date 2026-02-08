@@ -72,7 +72,7 @@ When the local timezone transitions for daylight saving time (DST), the logic ha
 2. **Fall-back ambiguity (repeated local times)**: When a toggle occurs during a repeated hour, it can appear twice with different [fold](https://docs.python.org/3/library/datetime.html#datetime.datetime.fold) values and adjusted time. For example, when DST ends, the hour from `01:00` to `01:59` can repeat twice. If the schedule has a single range `00:30-01:30` and the time is `00:00`, the next four toggles will be:
     1. `00:30` (`on`, `fold=0`)
     2. `01:30` (`off`, `fold=0`)
-    3. `01:00` (`on`, `fold=1`)
+    3. `01:00` (`on`, `fold=1`) <<<< the time jumped back to `01:00` which is inside the schedule's range
     4. `01:30` (`off`, `fold=1`).
 
 ## `set` Action

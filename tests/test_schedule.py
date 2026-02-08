@@ -575,6 +575,21 @@ def test_next_update(
         (
             [
                 {
+                    CONF_FROM: "00:30",
+                    CONF_TO: "01:30",
+                },
+            ],
+            datetime.datetime(2024, 10, 27, 0, 0, tzinfo=TZ_IL),
+            [
+                datetime.datetime(2024, 10, 27, 0, 30, tzinfo=TZ_IL, fold=0),
+                datetime.datetime(2024, 10, 27, 1, 30, tzinfo=TZ_IL, fold=0),
+                datetime.datetime(2024, 10, 27, 1, 00, tzinfo=TZ_IL, fold=1),
+                datetime.datetime(2024, 10, 27, 1, 30, tzinfo=TZ_IL, fold=1),
+            ],
+        ),
+        (
+            [
+                {
                     CONF_FROM: "00:45:00",
                     CONF_TO: "02:15:00",
                 },
@@ -608,6 +623,7 @@ def test_next_update(
             datetime.datetime(2024, 10, 27, 0, 30, tzinfo=TZ_IL),
             [
                 datetime.datetime(2024, 10, 27, 1, 45, tzinfo=TZ_IL, fold=0),
+                datetime.datetime(2024, 10, 27, 1, 00, tzinfo=TZ_IL, fold=1),
                 datetime.datetime(2024, 10, 27, 1, 45, tzinfo=TZ_IL, fold=1),
                 datetime.datetime(2024, 10, 27, 2, 15, tzinfo=TZ_IL, fold=0),
             ],
@@ -729,6 +745,7 @@ def test_next_update(
     ],
     ids=[
         "inside fold1",
+        "fold1 start",
         "covering fold1",
         "enter fold1",
         "exit fold1",

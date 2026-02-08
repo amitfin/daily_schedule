@@ -293,19 +293,21 @@ class Schedule:
             return result
 
         # Handle ambiguous time (fall back) due to backward jump, e.g. 2am => 1am.
-        # If we are at "fold=0", but "fold=1" has an earlier update, use it instead.
         if (
             (old_offset := date.utcoffset()) is not None
             and (new_offset := result.utcoffset()) is not None
             # If time goes back between now and next update.
             and old_offset > new_offset
-            # Get the beginning of "fold=1".
+            # Get the beginning of "fold=1" (always earlier than "result").
             and (fold1_start := self._fold1_start(date, result)) is not None
-            # Find the 1st update from the beginning of "fold=1".
-            and (fold1_update := self.next_update(fold1_start)) is not None
         ):
-            # Use the earlier update.
-            return min(result, fold1_update)
+            # If the beginning of "fold=1" is an update, use it.
+            if self.containing(date.time()) != self.containing(fold1_start.time()):
+                return fold1_start
+
+            # Find the 1st update from the beginning of "fold=1".
+            if (fold1_update := self.next_update(fold1_start)) is not None:
+                return fold1_update
 
         # Preserve "fold=1" if needed.
         # We check DST boundary is not crossed by comparing offsets with "fold=0".
