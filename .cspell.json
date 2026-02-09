@@ -15,6 +15,7 @@
     "levelname",
     "levelno",
     "mypy",
+    "prek",
     "pytest",
     "PYTHONPATH",
     "pytz",
