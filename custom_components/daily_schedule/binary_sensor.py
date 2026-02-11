@@ -194,7 +194,7 @@ class DailyScheduleSensor(BinarySensorEntity):
             )
 
         next_toggles = self._schedule.next_updates(self._now(), NEXT_TOGGLES_COUNT)
-        next_update = next_toggles[0] if len(next_toggles) > 0 else None
+        next_update = next_toggles[0] if next_toggles else None
         self._attr_extra_state_attributes[ATTR_NEXT_TOGGLE] = next_update
         self._attr_extra_state_attributes[ATTR_NEXT_TOGGLES] = next_toggles
 
