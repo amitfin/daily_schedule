@@ -68,12 +68,19 @@ The binary sensor has the following attributes:
 ## Daylight Saving Time Handling
 
 When the local timezone transitions for daylight saving time (DST), the logic handles edge cases explicitly:
-1. **Forward gaps (non-existent times):** If a toggle falls into a missing local time, it is advanced until a valid local time is reached. For example, when DST starts, the clock can jumps from `01:59` to `03:00`. If the schedule has a toggle at `02:30`, its time will be adjusted to `03:00`.
-2. **Fall-back ambiguity (repeated local times)**: When a toggle occurs during a repeated hour, it can appear twice with different [fold](https://docs.python.org/3/library/datetime.html#datetime.datetime.fold) values and adjusted time. For example, when DST ends, the hour from `01:00` to `01:59` can repeat twice. If the schedule has a single range `00:30-01:30` and the time is `00:00`, the next four toggles will be:
-    1. `00:30` (`on`, `fold=0`)
-    2. `01:30` (`off`, `fold=0`)
-    3. `01:00` (`on`, `fold=1`) <<<< the time jumped back to `01:00` which is inside the schedule's range
-    4. `01:30` (`off`, `fold=1`).
+1. **Forward gaps (non-existent times)**
+
+   When DST starts, the clock jumps forward and certain local times do not exist (for example, from `01:59` directly to `03:00`). If a scheduled toggle falls within this missing interval, it is advanced to the next valid local time. For example, if the schedule defines a toggle at `02:30`, it will be adjusted to `03:00`. Note that ranges overlapping the forward gap will run for a shorter duration than intended on the day DST begins.
+2. **Fall-back ambiguity (repeated local times)**
+
+   When DST ends, the clock moves backward and a local hour repeats (for example, `01:00–01:59` occurs twice). In this case, toggles within the repeated interval may occur twice, distinguished by their [fold](https://docs.python.org/3/library/datetime.html#datetime.datetime.fold) value. For example, if the schedule contains a single range `00:30–01:30` and the current time is `00:00`, the next four toggles will be:
+	  
+      1. `00:30` (`on`, `fold=0`)
+	  2. `01:30` (`off`, `fold=0`)
+	  3. `01:00` (`on`, `fold=1`) — the clock has moved backward. Note that `01:00` is never a toggle, except here.
+	  4. `01:30` (`off`, `fold=1`)
+ 
+    Ranges overlapping the repeated interval will therefore run longer than intended on the day DST ends.
 
 ## `set` Action
 
@@ -139,5 +146,6 @@ A time range with absolute `from` and `to` times is never skipped, even if it's 
 ## Contributions are welcome!
 
 If you want to contribute to this please read the [Contribution guidelines](CONTRIBUTING.md)
+
 
 
