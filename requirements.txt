@@ -1,3 +1,4 @@
+home-assistant-frontend
 ruff
 mypy
 prek

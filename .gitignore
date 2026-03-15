@@ -7,6 +7,11 @@ __pycache__
 .DS_Store
 .ruff_cache
 
+# JS
+node_modules/
+package-lock.json
+coverage/
+
 # misc
 .coverage
 coverage.xml

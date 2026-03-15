@@ -67,7 +67,11 @@ def pytest_runtest_call(item: pytest.Item) -> Any:
         if any(
             message.startswith(allowed_log)
             for allowed_log in chain(
-                allowed_logs, ["We found a custom integration daily_schedule"]
+                allowed_logs,
+                [
+                    "We found a custom integration daily_schedule",
+                    "zlib_ng and isal are not available",
+                ],
             )
         ):
             continue

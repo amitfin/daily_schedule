@@ -4,6 +4,10 @@
   "codeowners": [
     "@amitfin"
   ],
+  "dependencies": [
+    "frontend",
+    "http"
+  ],
   "config_flow": true,
   "documentation": "https://github.com/amitfin/daily_schedule",
   "integration_type": "helper",

@@ -2,14 +2,27 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
+import homeassistant.helpers.config_validation as cv
 from homeassistant.const import Platform
+
+from .const import DOMAIN
+from .custom_card import publish_card
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
+    from homeassistant.helpers.typing import ConfigType
 
     from .binary_sensor import DailyScheduleConfigEntry
+
+CONFIG_SCHEMA: Final = cv.config_entry_only_config_schema(DOMAIN)
+
+
+async def async_setup(hass: HomeAssistant, _: ConfigType) -> bool:
+    """Set up custom actions."""
+    await publish_card(hass)
+    return True
 
 
 async def async_setup_entry(
