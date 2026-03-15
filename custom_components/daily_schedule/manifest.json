@@ -4,11 +4,11 @@
   "codeowners": [
     "@amitfin"
   ],
+  "config_flow": true,
   "dependencies": [
     "frontend",
     "http"
   ],
-  "config_flow": true,
   "documentation": "https://github.com/amitfin/daily_schedule",
   "integration_type": "helper",
   "iot_class": "calculated",
