@@ -261,7 +261,6 @@ afterEach(() => {
 describe("DailyScheduleCard - registration & basic API", () => {
   test("custom elements are registered", () => {
     expect(customElements.get("daily-schedule-card")).toBeDefined();
-    expect(customElements.get("daily-schedule-card-editor")).toBeDefined();
   });
 
   test("delayed registration path resolves after home-assistant is defined", async () => {
@@ -317,13 +316,15 @@ describe("DailyScheduleCard - registration & basic API", () => {
     }
   });
 
-  test("create element + getConfigElement + stub config", () => {
+  test("create element + getConfigForm + stub config", () => {
     const el = document.createElement("daily-schedule-card");
     expect(el).toBeInstanceOf(HTMLElement);
 
-    const editor = customElements.get("daily-schedule-card").getConfigElement();
-    expect(editor).toBeInstanceOf(HTMLElement);
-    expect(editor.tagName.toLowerCase()).toBe("daily-schedule-card-editor");
+    const configForm = customElements
+      .get("daily-schedule-card")
+      .getConfigForm();
+    expect(configForm).toBeTruthy();
+    expect(configForm.schema).toBeInstanceOf(Array);
 
     const stub = customElements.get("daily-schedule-card").getStubConfig();
     expect(stub).toEqual({ card: true, entities: [] });
@@ -1296,205 +1297,109 @@ describe("DailyScheduleCard - _saveBackendEntity branches", () => {
   });
 });
 
-describe("DailyScheduleCardEditor - constructor, hass, setConfig & rendering", () => {
-  test("constructor creates shadow root and hui entities editor workaround", () => {
-    const editor = document.createElement("daily-schedule-card-editor");
-    expect(editor).toBeInstanceOf(HTMLElement);
-    expect(editor.shadowRoot).toBeTruthy();
-    expect(editor._hui_entities_card_editor).toBeTruthy();
-  });
+describe("DailyScheduleCard - config form", () => {
+  test("getConfigForm exposes the expected schema", () => {
+    const configForm = customElements
+      .get("daily-schedule-card")
+      .getConfigForm();
 
-  test("set hass assigns internal hass", () => {
-    const editor = document.createElement("daily-schedule-card-editor");
-    const hass = createHass();
-    editor.hass = hass;
-    expect(editor._hass).toBe(hass);
-  });
-
-  test("setConfig returns early when hass missing", () => {
-    const editor = document.createElement("daily-schedule-card-editor");
-    editor.setConfig({ entities: [] });
-    expect(editor._config).toBeUndefined();
-    expect(editor.shadowRoot.innerHTML).toBe("");
-  });
-
-  test("setConfig returns early when config same (stringify equal)", () => {
-    const editor = document.createElement("daily-schedule-card-editor");
-    const hass = createHass();
-    editor.hass = hass;
-
-    const cfg = { title: "T", entities: ["binary_sensor.a"] };
-    editor.setConfig(cfg);
-    const first = editor._config;
-
-    editor.setConfig({ title: "T", entities: ["binary_sensor.a"] });
-    expect(editor._config).toBe(first);
-  });
-
-  test("_setCSS injects style block", () => {
-    const editor = document.createElement("daily-schedule-card-editor");
-    const hass = createHass();
-    editor.hass = hass;
-
-    editor.setConfig({ entities: [] });
-    expect(editor.shadowRoot.innerHTML).toMatch(/<style>/i);
-    expect(editor.shadowRoot.innerHTML).toMatch(/ha-textfield/i);
-  });
-
-  test("_addTitle: sets label, copies existing title, and emits config-changed on input", () => {
-    const editor = document.createElement("daily-schedule-card-editor");
-    const hass = createHass();
-    editor.hass = hass;
-
-    const spy = vi.fn();
-    editor.addEventListener("config-changed", spy);
-
-    editor.setConfig({ title: "Old", entities: [] });
-
-    const titleField = editor.shadowRoot.querySelector("ha-textfield");
-    expect(titleField).toBeTruthy();
-    expect(titleField.label).toMatch(
-      /ui\.panel\.lovelace\.editor\.card\.generic\.title/i,
-    );
-    expect(titleField.value).toBe("Old");
-
-    titleField.value = "NewTitle";
-    titleField.dispatchEvent(new Event("input"));
-
-    expect(spy).toHaveBeenCalled();
-    const lastEvent = spy.mock.calls.at(-1)[0];
-    expect(lastEvent.detail.config.title).toBe("NewTitle");
-
-    titleField.value = "";
-    titleField.dispatchEvent(new Event("input"));
-
-    const lastEvent2 = spy.mock.calls.at(-1)[0];
-    expect(lastEvent2.detail.config.title).toBeUndefined();
-  });
-
-  test("_createEntityPicker sets domains and filter function behavior", () => {
-    const editor = document.createElement("daily-schedule-card-editor");
-    const hass = createHass({
-      entities: {
-        "binary_sensor.a": { platform: "daily_schedule" },
-        "binary_sensor.b": { platform: "other" },
+    expect(configForm.schema).toEqual([
+      {
+        name: "title",
+        selector: { text: {} },
       },
-    });
-    editor.hass = hass;
-    editor.setConfig({ entities: [] });
-
-    const picker = editor._createEntityPicker();
-    expect(picker.includeDomains).toEqual(["binary_sensor"]);
-    expect(typeof picker.entityFilter).toBe("function");
-
-    expect(picker.entityFilter({ entity_id: "binary_sensor.a" })).toBe(true);
-    expect(picker.entityFilter({ entity_id: "binary_sensor.b" })).toBe(false);
-    expect(picker.entityFilter({ entity_id: "binary_sensor.missing" })).toBe(
-      false,
-    );
-  });
-
-  test("_addEntities renders sortable with entities, add-new picker, and supports item-moved reorder", () => {
-    const editor = document.createElement("daily-schedule-card-editor");
-    const hass = createHass({
-      entities: {
-        "binary_sensor.a": { platform: "daily_schedule" },
-        "binary_sensor.b": { platform: "daily_schedule" },
+      {
+        name: "entities",
+        required: true,
+        selector: {
+          entity: {
+            multiple: true,
+            filter: {
+              domain: "binary_sensor",
+              integration: "daily_schedule",
+            },
+          },
+        },
       },
-    });
-    editor.hass = hass;
-
-    const spy = vi.fn();
-    editor.addEventListener("config-changed", spy);
-
-    editor.setConfig({ entities: ["binary_sensor.a", "binary_sensor.b"] });
-
-    const sortable = editor.shadowRoot.querySelector("ha-sortable");
-    expect(sortable).toBeTruthy();
-
-    const entityPickers =
-      editor.shadowRoot.querySelectorAll("ha-entity-picker");
-    expect(entityPickers.length).toBe(3);
-
-    sortable.emitMoved(0, 1);
-
-    expect(editor._config).toBeNull();
-
-    const movedEv = spy.mock.calls.at(-1)[0];
-    expect(movedEv.detail.config.entities).toEqual([
-      "binary_sensor.b",
-      "binary_sensor.a",
     ]);
   });
 
-  test("_addEntity value-changed: set to value (replace), and set to null (remove) and rerender", () => {
-    const editor = document.createElement("daily-schedule-card-editor");
-    const hass = createHass({
-      entities: {
-        "binary_sensor.a": { platform: "daily_schedule" },
-        "binary_sensor.b": { platform: "daily_schedule" },
-      },
-    });
-    editor.hass = hass;
+  test("getConfigForm assertConfig allows configs the visual editor can represent", () => {
+    const { assertConfig } = customElements
+      .get("daily-schedule-card")
+      .getConfigForm();
 
-    const spy = vi.fn();
-    editor.addEventListener("config-changed", spy);
-
-    editor.setConfig({ entities: ["binary_sensor.a"] });
-
-    const pickers = editor.shadowRoot.querySelectorAll("ha-entity-picker");
-    const first = pickers[0];
-
-    first.emitValue("binary_sensor.b");
-    const ev1 = spy.mock.calls.at(-1)[0];
-    expect(ev1.detail.config.entities).toEqual(["binary_sensor.b"]);
-    expect(editor._config).not.toBeNull();
-
-    first.emitValue(null);
-    const ev2 = spy.mock.calls.at(-1)[0];
-    expect(ev2.detail.config.entities).toEqual([]);
-    expect(editor._config).toBeNull();
+    expect(() =>
+      assertConfig({
+        type: "custom:daily-schedule-card",
+        title: "Daily Schedule",
+        card: true,
+        template: "{{ states(entity_id) }}",
+        entities: ["binary_sensor.schedule_a", "binary_sensor.schedule_b"],
+      }),
+    ).not.toThrow();
   });
 
-  test("_addNewEntity: value-changed pushes new entity and rerenders", () => {
-    const editor = document.createElement("daily-schedule-card-editor");
-    const hass = createHass({
-      entities: {
-        "binary_sensor.a": { platform: "daily_schedule" },
-      },
-    });
-    editor.hass = hass;
+  test("getConfigForm assertConfig ignores entity validation when entities is not an array", () => {
+    const { assertConfig } = customElements
+      .get("daily-schedule-card")
+      .getConfigForm();
 
-    const spy = vi.fn();
-    editor.addEventListener("config-changed", spy);
-
-    editor.setConfig({ entities: [] });
-
-    const pickers = editor.shadowRoot.querySelectorAll("ha-entity-picker");
-    const addNew = pickers[pickers.length - 1];
-    addNew.emitValue("binary_sensor.a");
-
-    const ev = spy.mock.calls.at(-1)[0];
-    expect(ev.detail.config.entities).toEqual(["binary_sensor.a"]);
-    expect(editor._config).toBeNull();
+    expect(() =>
+      assertConfig({
+        type: "custom:daily-schedule-card",
+        title: "Daily Schedule",
+        card: true,
+      }),
+    ).not.toThrow();
   });
 
-  test("_configChanged creates event with deep-copied config and respects rerender flag", () => {
-    const editor = document.createElement("daily-schedule-card-editor");
-    const hass = createHass();
-    editor.hass = hass;
+  test("getConfigForm assertConfig handles missing config", () => {
+    const { assertConfig } = customElements
+      .get("daily-schedule-card")
+      .getConfigForm();
 
-    const spy = vi.fn();
-    editor.addEventListener("config-changed", spy);
+    expect(() => assertConfig()).not.toThrow();
+  });
 
-    editor.setConfig({ entities: ["binary_sensor.a"] });
+  test("getConfigForm assertConfig switches to YAML mode for unsupported editor shapes", () => {
+    const { assertConfig } = customElements
+      .get("daily-schedule-card")
+      .getConfigForm();
 
-    editor._configChanged(true);
-    expect(spy).toHaveBeenCalled();
-    expect(editor._config).toBeNull();
+    expect(() =>
+      assertConfig({
+        entities: [
+          {
+            entity: "binary_sensor.schedule_a",
+            name: "Schedule A",
+          },
+        ],
+      }),
+    ).toThrow(/Visual editor is not available for entity options/);
 
-    const ev = spy.mock.calls.at(-1)[0];
-    expect(ev.detail.config).toEqual({ entities: ["binary_sensor.a"] });
-    expect(ev.detail.config).not.toBe(editor._config);
+    expect(() =>
+      assertConfig({
+        entities: [123],
+      }),
+    ).toThrow(/Visual editor is not available for entity options/);
+  });
+
+  test("getConfigForm computeLabel returns friendly labels", () => {
+    const { computeLabel } = customElements
+      .get("daily-schedule-card")
+      .getConfigForm();
+
+    const localize = (key) => key;
+
+    expect(computeLabel({ name: "title" }, localize)).toBe(
+      "ui.panel.lovelace.editor.card.generic.title (ui.panel.lovelace.editor.card.config.optional)",
+    );
+    expect(computeLabel({ name: "entities" }, localize)).toBe(
+      "ui.panel.lovelace.editor.card.generic.entities (ui.panel.lovelace.editor.card.config.required)",
+    );
+    expect(computeLabel({ name: "unknown_option" }, localize)).toBe(
+      "unknown_option",
+    );
   });
 });

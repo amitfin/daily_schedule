@@ -48,8 +48,53 @@ class DailyScheduleCard extends HTMLElement {
     return this._config ? this._config.entities.length : 1;
   }
 
-  static getConfigElement() {
-    return document.createElement("daily-schedule-card-editor");
+  static getConfigForm() {
+    return {
+      schema: [
+        {
+          name: "title",
+          selector: { text: {} },
+        },
+        {
+          name: "entities",
+          required: true,
+          selector: {
+            entity: {
+              multiple: true,
+              filter: {
+                domain: "binary_sensor",
+                integration: "daily_schedule",
+              },
+            },
+          },
+        },
+      ],
+      assertConfig: (config) => {
+        if (Array.isArray(config?.entities)) {
+          for (const entry of config.entities) {
+            if (typeof entry !== "string") {
+              throw new Error(
+                "Visual editor is not available for entity options.",
+              );
+            }
+          }
+        }
+      },
+      computeLabel: (schema, localize) => {
+        switch (schema.name) {
+          case "title":
+            return `${localize("ui.panel.lovelace.editor.card.generic.title")} (${localize(
+              "ui.panel.lovelace.editor.card.config.optional",
+            )})`;
+          case "entities":
+            return `${localize("ui.panel.lovelace.editor.card.generic.entities")} (${localize(
+              "ui.panel.lovelace.editor.card.config.required",
+            )})`;
+          default:
+            return schema.name;
+        }
+      },
+    };
   }
 
   static getStubConfig() {
@@ -474,197 +519,3 @@ if (!window.customCards.some((card) => card.type === "daily-schedule-card")) {
     documentationURL: "https://github.com/amitfin/lovelace-daily-schedule-card",
   });
 }
-
-class DailyScheduleCardEditor extends HTMLElement {
-  constructor() {
-    super();
-
-    // Workaround for forcing the load of "ha-entity-picker" element.
-    this._hui_entities_card_editor = document
-      .createElement("hui-entities-card")
-      .constructor.getConfigElement();
-
-    this._shadow = this.attachShadow({ mode: "open" });
-  }
-
-  set hass(hass) {
-    this._hass = hass;
-  }
-
-  setConfig(config) {
-    if (
-      JSON.stringify(this._config) === JSON.stringify(config) ||
-      !this._hass
-    ) {
-      return;
-    }
-    this._config = JSON.parse(JSON.stringify(config));
-    this._setCSS();
-    this._addTitle();
-    this._addEntities();
-  }
-
-  _setCSS() {
-    this._shadow.innerHTML = `
-      <style>
-        ha-textfield {
-          display: block;
-          margin-bottom: 16px;
-        }
-        ha-entity-picker {
-          margin-top: 8px;
-        }
-        .add-entity {
-          display: block;
-          margin-left: 31px;
-          margin-inline-start: 31px;
-          direction: var(--direction);
-        }
-        .entity {
-          display: flex;
-          align-items: center;
-        }
-        .entity .handle {
-          padding-right: 8px;
-          cursor: move; /* fallback if grab cursor is unsupported */
-          cursor: grab;
-          padding-inline-end: 8px;
-          padding-inline-start: initial;
-          direction: var(--direction);
-        }
-        .entity .handle > * {
-          pointer-events: none;
-        }
-        .entity ha-entity-picker {
-          flex-grow: 1;
-        }
-      </style>
-    `;
-  }
-
-  _addTitle() {
-    const title = document.createElement("ha-textfield");
-    title.label = `${this._hass.localize(
-      "ui.panel.lovelace.editor.card.generic.title",
-    )} (${this._hass.localize(
-      "ui.panel.lovelace.editor.card.config.optional",
-    )})`;
-    if (this._config.title) {
-      title.value = this._config.title;
-    }
-    title.addEventListener("input", (ev) => {
-      const value = ev.target.value;
-      if (value) {
-        this._config.title = value;
-      } else {
-        this._config.title = undefined;
-      }
-      this._configChanged();
-    });
-
-    const card = document.createElement("DIV");
-    card.classList.add("card-config");
-    card.appendChild(title);
-    this._shadow.appendChild(card);
-  }
-
-  _addEntities() {
-    const title = document.createElement("h3");
-    title.textContent = `${this._hass.localize(
-      "ui.panel.lovelace.editor.card.generic.entities",
-    )} (${this._hass.localize(
-      "ui.panel.lovelace.editor.card.config.required",
-    )})`;
-    this._shadow.appendChild(title);
-
-    const sortable = document.createElement("ha-sortable");
-    sortable.handleSelector = ".handle";
-    sortable.addEventListener("item-moved", (ev) => {
-      const { oldIndex, newIndex } = ev.detail;
-      this._config.entities.splice(
-        newIndex,
-        0,
-        this._config.entities.splice(oldIndex, 1)[0],
-      );
-      this._configChanged(true);
-    });
-
-    const entities = document.createElement("DIV");
-    entities.classList.add("entities");
-
-    for (const [index, config] of this._config.entities.entries()) {
-      this._addEntity(config, index, entities);
-    }
-
-    sortable.appendChild(entities);
-    this._shadow.appendChild(sortable);
-
-    this._addNewEntity();
-  }
-
-  _createEntityPicker() {
-    const picker = document.createElement("ha-entity-picker");
-    picker.hass = this._hass;
-    picker.includeDomains = ["binary_sensor"];
-    picker.entityFilter = (entity) =>
-      this._hass.entities?.[entity.entity_id]?.platform === "daily_schedule";
-    return picker;
-  }
-
-  _addEntity(config, index, parent) {
-    const entity = document.createElement("DIV");
-    entity.classList.add("entity");
-
-    const handle = document.createElement("DIV");
-    handle.classList.add("handle");
-    entity.appendChild(handle);
-
-    const drag = document.createElement("ha-svg-icon");
-    drag.path =
-      "M7,19V17H9V19H7M11,19V17H13V19H11M15,19V17H17V19H15M7,15V13H9V15H7M11,15V13H13V15H11M15,15V13H17V15H15M7,11V9H9V11H7M11,11V9H13V11H11M15,11V9H17V11H15M7,7V5H9V7H7M11,7V5H13V7H11M15,7V5H17V7H15Z";
-    handle.appendChild(drag);
-
-    const picker = this._createEntityPicker();
-    picker.value = config.entity || config;
-    picker.index = index;
-    picker.addEventListener("value-changed", (ev) => {
-      const value = ev.detail.value;
-      if (value) {
-        this._config.entities[index] = value;
-        this._configChanged();
-      } else {
-        this._config.entities.splice(index, 1);
-        this._configChanged(true);
-      }
-    });
-    entity.appendChild(picker);
-
-    parent.appendChild(entity);
-  }
-
-  _addNewEntity() {
-    const entity = this._createEntityPicker();
-    entity.classList.add("add-entity");
-    entity.addEventListener("value-changed", (ev) => {
-      this._config.entities.push(ev.detail.value);
-      this._configChanged(true);
-    });
-    this._shadow.appendChild(entity);
-  }
-
-  _configChanged(rerender = false) {
-    const event = new Event("config-changed", {
-      bubbles: true,
-      composed: true,
-    });
-    event.detail = {
-      config: JSON.parse(JSON.stringify(this._config)),
-    };
-    if (rerender) {
-      this._config = null;
-    }
-    this.dispatchEvent(event);
-  }
-}
-
-_register("daily-schedule-card-editor", DailyScheduleCardEditor);
