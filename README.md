@@ -8,8 +8,6 @@
 
 The Daily Schedule integration provides a binary sensor that gets its `on` / `off` state according to the user-defined schedule of time ranges.
 
-_There is a corresponding [Lovelace card](https://github.com/amitfin/lovelace-daily-schedule-card) which should be used for configuration. To open the card installation page inside HACS click [here](https://my.home-assistant.io/redirect/hacs_repository/?owner=amitfin&repository=lovelace-daily-schedule-card&category=plugin)._
-
 Automation rules can be built with the daily schedule entities as demonstrated [here](https://youtu.be/5toly_W7fUU).
 
 _Note: The built-in [Schedule integration](https://www.home-assistant.io/integrations/schedule/) can be used when a weekly schedule is needed._
@@ -56,6 +54,67 @@ There are 3 ways to specify time:
 1. An absolute time (e.g. 12:30).
 2. Sunset with an optional negative or positive minutes offset.
 3. Sunrise with an optional negative or positive minutes offset.
+
+## Lovelace Card Configuration
+
+### Visual Editor
+
+| <img width="500" src="https://github.com/user-attachments/assets/aaf27761-4e3a-4afb-a5ed-b0b19f56eb92" /> |
+|---|
+
+### Code Editor
+
+#### General
+
+| Name     | Type   | Required | Default                       | Description                                                         |
+| -------- | ------ | -------- | ----------------------------- | ------------------------------------------------------------------- |
+| type     | string | True     | -                             | Must be `custom:daily-schedule-card`                                |
+| title    | string | False    | -                             | Title of the card                                                   |
+| card     | bool   | False    | _True if `title` is supplied_ | Whether to render an entire card or rows inside the `entities` card |
+| template | string | False    | `Null`                        | Template for rendering the value. Has access to `entity_id`         |
+
+#### Entities
+
+| Name     | Type   | Required | Default                       | Description                                     |
+| -------- | ------ | -------- | ----------------------------- | ----------------------------------------------- |
+| entity   | string | True     | -                             | The `binary_sensor` entity ID                   |
+| name     | string | False    | _Friendly name of the entity_ | Name to display                                 |
+| template | string | False    | `Null`                        | Per-entity template (overrides card's template) |
+
+_Note: the plain entity ID string can be specified (with no `entity:`) if there is no need to use other attributes._
+
+#### Entities Card Example
+
+```yaml
+type: entities
+entities:
+  - type: custom:daily-schedule-card
+    entities:
+      - entity: binary_sensor.venta_schedule
+        name: Venta
+```
+
+#### Entire Card Example
+
+```yaml
+type: custom:daily-schedule-card
+title: Timers
+entities:
+  - binary_sensor.swimming_pool_filter_schedule
+```
+
+#### Template Example
+
+```yaml
+type: custom:daily-schedule-card
+card: true
+template: >-
+  {{ state_attr(entity_id, 'effective_schedule') |
+  map(attribute='from') | map('truncate', 2, True, '')
+  | join(' | ') }}
+entities:
+  - binary_sensor.let_the_dog_out
+```
 
 ## Attributes
 
