@@ -1,7 +1,7 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.4.7/schema.json",
   "files": {
-    "includes": ["custom_components/daily_schedule/cards/*", "js-tests/*"]
+    "includes": ["custom_components/daily_schedule/card/*", "js-tests/*"]
   },
   "formatter": {
     "indentStyle": "space",

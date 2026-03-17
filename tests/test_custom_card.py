@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, patch
@@ -9,6 +10,7 @@ from unittest.mock import AsyncMock, patch
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.daily_schedule.const import DOMAIN
+from custom_components.daily_schedule.custom_card import CARD_FILE, FRONTEND_PATH
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -34,3 +36,8 @@ async def test_setup_js_url(hass: HomeAssistant) -> None:
     mock_add_extra_js_url.assert_called_once_with(
         hass, "/daily_schedule_internal_static/daily-schedule-card.js?v=2.3.4"
     )
+
+
+def test_card_file_exists() -> None:
+    """Verify that the card file exists."""
+    assert (Path(FRONTEND_PATH) / CARD_FILE).is_file()

@@ -16,7 +16,7 @@ from .const import DOMAIN
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
-FRONTEND_PATH: Final = Path(__file__).parent / "cards"
+FRONTEND_PATH: Final = Path(__file__).parent / "card"
 CARD_FILE: Final = "daily-schedule-card.js"
 URL_BASE: Final = f"/{DOMAIN}_internal_static"
 
