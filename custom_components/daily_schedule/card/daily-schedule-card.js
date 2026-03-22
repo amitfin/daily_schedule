@@ -61,6 +61,7 @@ class DailyScheduleCard extends HTMLElement {
           selector: {
             entity: {
               multiple: true,
+              reorder: true,
               filter: {
                 domain: "binary_sensor",
                 integration: "daily_schedule",

@@ -1314,6 +1314,7 @@ describe("DailyScheduleCard - config form", () => {
         selector: {
           entity: {
             multiple: true,
+            reorder: true,
             filter: {
               domain: "binary_sensor",
               integration: "daily_schedule",
