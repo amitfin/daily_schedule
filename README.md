@@ -38,7 +38,7 @@ Or, in the Home Assistant UI go through the following path:
 
 => Click "+ Create helper" button and search for "Daily Schedule".
 
-This will create the `binary_sensor` helper. To actually configure it follow the next step.
+This will create the `binary_sensor` helper. To actually configure it, follow the next step.
 
 ## Usage (Lovelace Card)
 
