@@ -42,7 +42,7 @@ This will create the `binary_sensor` helper. To actually configure it, follow th
 
 ## Usage (Lovelace Card)
 
-To configure the Daily Schedule you have to use the Daily Schedule card on a dashboard of your choice:
+The easiest way to configure the Daily Schedule is to use the Daily Schedule card on a dashboard of your choice:
 
 <img width="1064" height="812" alt="image" src="https://github.com/user-attachments/assets/69108ece-b670-4762-9692-90d4dc844b6e" />
 <br>
