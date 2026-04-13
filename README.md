@@ -38,7 +38,17 @@ Or, in the Home Assistant UI go through the following path:
 
 => Click "+ Create helper" button and search for "Daily Schedule".
 
-## Usage (Lovelace Card)
+This creates a `binary_sensor.<name>` entity with no time ranges configured yet. Use the Daily Schedule card to add the desired time ranges.
+
+## Daily Schedule Card
+
+### Install
+
+You can add the Daily Schedule custom card to any dashboard by selecting "+ Add Card" in the built-in dashboard editor.
+
+### Usage
+
+Use the card to view and set Daily Schedule time ranges:
 
 <img width="601" alt="image" src="https://github.com/user-attachments/assets/44dee96b-72e3-4bbe-81d4-b88c3ce9cb63" />
 <br>
