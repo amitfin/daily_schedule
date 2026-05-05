@@ -6,6 +6,7 @@ __pycache__
 */dist/*
 .DS_Store
 .ruff_cache
+.devcontainer-lock.json
 
 # JS
 node_modules/
