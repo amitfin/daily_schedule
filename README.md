@@ -12,6 +12,21 @@ Automation rules can be built with the daily schedule entities as demonstrated [
 
 _Note: The built-in [Schedule integration](https://www.home-assistant.io/integrations/schedule/) can be used when a weekly schedule is needed._
 
+## Contents
+
+- [Install](#install)
+- [Create Daily Schedule](#create-daily-schedule)
+- [Daily Schedule Card](#daily-schedule-card)
+- [Time Ranges](#time-ranges)
+- [Lovelace Card Configuration](#lovelace-card-configuration)
+- [Attributes](#attributes)
+- [Daylight Saving Time Handling](#daylight-saving-time-handling)
+- [`set` Action](#set-action)
+- [Additional Cards](#additional-cards)
+- [UTC Option](#utc-option)
+- [Skip-Reversed Option](#skip-reversed-option)
+- [Removing the Integration](#removing-the-integration)
+
 ## Install
 
 [HACS](https://hacs.xyz/) is the preferred and easier way to install the component. When HACS is installed, the integration can be installed using this My button:
@@ -58,7 +73,7 @@ Use the card to view and set Daily Schedule time ranges:
 
 ## Time Ranges
 
-Each range has `from` and `to`. If the `to` is less than or equal `from` it's treated as time in the following day. One interesting case is when `from` equals `to`. This type of range covers the whole day (always on).
+Each range has `from` and `to`. If `to` is less than or equal to `from`, it is treated as a time in the following day. One interesting case is when `from` equals `to`. This type of range covers the whole day (always on).
 
 There are 3 ways to specify time:
 1. An absolute time (e.g. 12:30).
@@ -156,7 +171,7 @@ When the local timezone transitions for daylight saving time (DST), the logic ha
 
 `daily_schedule.set` action can be used to configure the time ranges. Here is an example:
 
-```
+```yaml
 action: daily_schedule.set
 data:
   schedule:
@@ -171,6 +186,8 @@ The format of `from` and `to` can be one of the 3 options:
 2. ***Sunset***: start with "↓" and can have an optional positive or negative offset in minutes. For example: "↓", "↓-20", "↓+30".
 3. ***Sunrise***: start with "↑" and can have an optional positive or negative offset in minutes.
 
+Each range also supports an optional `disabled` boolean field. When set to `true`, the range is kept in the schedule but treated as inactive (equivalent to temporarily removing it). The card's toggle switch sets this field.
+
 Notes:
 1. It's uncommon to perform this action directly. Its main usage is indirectly via the [Lovelace card](https://github.com/amitfin/lovelace-daily-schedule-card).
 2. There is no corresponding `get`. The data already exists as attributes:
@@ -182,13 +199,13 @@ Notes:
 
 ## Additional Cards
 
-[Timer Bar Card](https://github.com/rianadon/timer-bar-card) supports this integration. ```end_time``` must be configured as follow:
-```
+[Timer Bar Card](https://github.com/rianadon/timer-bar-card) supports this integration. `end_time` must be configured as follows:
+```yaml
 end_time:
   attribute: next_toggle
 ```
-By default it countdowns the time till the end of the current time range. ```active_state``` can be used for counting down the time to the beginning of the next range (instead):
-```
+By default it counts down the time until the end of the current time range. `active_state` can be used to count down the time to the beginning of the next range instead:
+```yaml
 active_state: 'off'
 ```
 
@@ -216,6 +233,4 @@ A time range with absolute `from` and `to` times is never skipped, even if it's 
 ## Contributions are welcome!
 
 If you want to contribute to this please read the [Contribution guidelines](CONTRIBUTING.md)
-
-
 
