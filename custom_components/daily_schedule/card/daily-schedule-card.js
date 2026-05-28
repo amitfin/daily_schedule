@@ -39,6 +39,7 @@ class DailyScheduleCard extends HTMLElement {
       throw new Error("You need to define entities");
     }
     this._config = config;
+    this._input_time_width = null;
     this.innerHTML = "";
     this._content = null;
     this._dialog = null;
@@ -54,6 +55,10 @@ class DailyScheduleCard extends HTMLElement {
         {
           name: "title",
           selector: { text: {} },
+        },
+        {
+          name: "seconds",
+          selector: { boolean: {} },
         },
         {
           name: "entities",
@@ -91,6 +96,8 @@ class DailyScheduleCard extends HTMLElement {
             return `${localize("ui.panel.lovelace.editor.card.generic.entities")} (${localize(
               "ui.panel.lovelace.editor.card.config.required",
             )})`;
+          case "seconds":
+            return localize("ui.panel.lovelace.editor.card.clock.show_seconds");
           default:
             return schema.name;
         }
@@ -220,7 +227,10 @@ class DailyScheduleCard extends HTMLElement {
         row._content._value_element.innerHTML = "&infin;";
       } else {
         const ranges = schedule
-          .map((range) => `${range.from.slice(0, -3)}-${range.to.slice(0, -3)}`)
+          .map(
+            (range) =>
+              `${this._formatTime(range.from)}-${this._formatTime(range.to)}`,
+          )
           .join(", ");
         row._content._value_element.innerHTML = `<bdi dir="ltr">${ranges}</bdi>`;
       }
@@ -417,7 +427,7 @@ class DailyScheduleCard extends HTMLElement {
       }
       let value;
       if (type_symbol._type === "time") {
-        value = `${time_input.value}:00`;
+        value = this._normalizeTimeInput(time_input.value);
       } else {
         value = type_symbol._type === "sunrise" ? sunrise : sunset;
         if (time_input.value) {
@@ -441,14 +451,15 @@ class DailyScheduleCard extends HTMLElement {
     symbol._type = type;
     if (type === "sunrise" || type === "sunset") {
       input.type = "number";
+      input.step = "1";
       input.value = parseInt(value || "0", 10);
       symbol.icon =
         type === "sunrise" ? "mdi:weather-sunny" : "mdi:weather-night";
     } else {
       input.type = "time";
+      input.step = this._timeStep();
       if (value) {
-        const time = value.split(":");
-        input.value = `${time[0]}:${time[1]}`;
+        input.value = this._formatTime(value);
       } else if (input.value) {
         input.value = null;
       }
@@ -457,19 +468,32 @@ class DailyScheduleCard extends HTMLElement {
   }
 
   _getInputTimeWidth() {
-    if (!this._input_time_width) {
+    if (this._input_time_width == null) {
       const dummyInput = document.createElement("INPUT");
       dummyInput.type = "time";
+      dummyInput.step = this._timeStep();
       dummyInput.style.visibility = "hidden";
       this.appendChild(dummyInput);
       setTimeout(() => {
         this._input_time_width = Math.min(
           dummyInput.getBoundingClientRect().width,
-          100,
+          this._config.seconds ? 140 : 100,
         );
         dummyInput.remove();
       }, 0);
     }
+  }
+
+  _timeStep() {
+    return this._config.seconds ? "1" : "60";
+  }
+
+  _formatTime(value) {
+    return this._config.seconds ? value : value.slice(0, -3);
+  }
+
+  _normalizeTimeInput(value) {
+    return value.length === 5 ? `${value}:00` : value;
   }
 
   _saveBackendEntity() {

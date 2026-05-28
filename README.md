@@ -65,6 +65,8 @@ There are 3 ways to specify time:
 2. Sunset with an optional negative or positive minutes offset.
 3. Sunrise with an optional negative or positive minutes offset.
 
+By default, the card displays and edits absolute times with minute precision. Set the card's `seconds` option to `true` to display and edit absolute times with second precision.
+
 ## Lovelace Card Configuration
 
 ### Visual Editor
@@ -80,6 +82,7 @@ There are 3 ways to specify time:
 | -------- | ------ | -------- | ----------------------------- | ------------------------------------------------------------------- |
 | type     | string | True     | -                             | Must be `custom:daily-schedule-card`                                |
 | title    | string | False    | -                             | Title of the card                                                   |
+| seconds  | bool   | False    | `False`                       | Whether to display and edit absolute times with second precision    |
 | card     | bool   | False    | _True if `title` is supplied_ | Whether to render an entire card or rows inside the `entities` card |
 | template | string | False    | `Null`                        | Template for rendering the value. Has access to `entity_id`         |
 

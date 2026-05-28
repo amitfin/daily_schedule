@@ -366,6 +366,23 @@ describe("DailyScheduleCard - registration & basic API", () => {
     el.setConfig({ entities: ["sensor.a"] });
     expect(el._content).toBe(beforeContent);
   });
+
+  test("setConfig invalidates cached time input width on config rebuild", () => {
+    const hass = createHass({
+      states: {
+        "sensor.a": {
+          state: "on",
+          attributes: { friendly_name: "A", effective_schedule: [] },
+        },
+      },
+    });
+    const el = mountCard({ entities: ["sensor.a"] }, hass);
+    el._input_time_width = 100;
+
+    el.setConfig({ entities: ["sensor.a"], title: "Schedule" });
+
+    expect(el._input_time_width).toBeNull();
+  });
 });
 
 describe("DailyScheduleCard - content creation, update, schedules & template", () => {
@@ -587,6 +604,50 @@ describe("DailyScheduleCard - content creation, update, schedules & template", (
     expect(bdi).toBeTruthy();
     expect(bdi.textContent).toContain("09:15-10:45");
     expect(bdi.textContent).toContain("13:00-14:30");
+  });
+
+  test("formats multiple ranges with seconds when seconds config is enabled", () => {
+    const hass = createHass({
+      states: {
+        "sensor.a": {
+          state: "on",
+          attributes: {
+            effective_schedule: [
+              { from: "09:15:05", to: "10:45:10" },
+              { from: "13:00:15", to: "14:30:20" },
+            ],
+          },
+        },
+      },
+    });
+
+    const card = mountCard({ entities: ["sensor.a"], seconds: true }, hass);
+    const row = card._content._rows[0];
+
+    const bdi = row._content._value_element.querySelector("bdi");
+    expect(bdi).toBeTruthy();
+    expect(bdi.textContent).toContain("09:15:05-10:45:10");
+    expect(bdi.textContent).toContain("13:00:15-14:30:20");
+  });
+
+  test("_formatTime respects default minute precision and seconds config", () => {
+    const hass = createHass({
+      states: {
+        "sensor.a": {
+          state: "on",
+          attributes: { friendly_name: "A", effective_schedule: [] },
+        },
+      },
+    });
+
+    const card = mountCard({ entities: ["sensor.a"] }, hass);
+    expect(card._formatTime("12:34:56")).toBe("12:34");
+
+    const secondsCard = mountCard(
+      { entities: ["sensor.a"], seconds: true },
+      hass,
+    );
+    expect(secondsCard._formatTime("12:34:56")).toBe("12:34:56");
   });
 
   test("template path subscribes, updates value, and unsubscribes", async () => {
@@ -941,6 +1002,7 @@ describe("DailyScheduleCard - time input behaviors", () => {
     expect(symbol._type).toBe("time");
     expect(symbol.icon).toBe("mdi:clock-outline");
     expect(input.type).toBe("time");
+    expect(input.step).toBe("60");
     expect(input.value).toBe("12:34");
 
     input.value = "09:00";
@@ -951,13 +1013,36 @@ describe("DailyScheduleCard - time input behaviors", () => {
     expect(symbol._type).toBe("sunrise");
     expect(symbol.icon).toBe("mdi:weather-sunny");
     expect(input.type).toBe("number");
+    expect(input.step).toBe("1");
     expect(String(input.value)).toBe("15");
 
     card._setInputType("sunset", symbol, input, "-10");
     expect(symbol._type).toBe("sunset");
     expect(symbol.icon).toBe("mdi:weather-night");
     expect(input.type).toBe("number");
+    expect(input.step).toBe("1");
     expect(String(input.value)).toBe("-10");
+  });
+
+  test("_setInputType: time uses seconds step and value when seconds config is enabled", () => {
+    const hass = createHass({
+      states: {
+        "sensor.a": {
+          state: "on",
+          attributes: { friendly_name: "A", effective_schedule: [] },
+        },
+      },
+    });
+    const card = mountCard({ entities: ["sensor.a"], seconds: true }, hass);
+
+    const symbol = document.createElement("ha-icon");
+    const input = document.createElement("input");
+
+    card._setInputType("time", symbol, input, "12:34:56");
+
+    expect(input.type).toBe("time");
+    expect(input.step).toBe("1");
+    expect(input.value).toBe("12:34:56");
   });
 
   test("_createTimeInput: sunrise/sunset onchange with 0 offset keeps only symbol; onchange with unchanged value does not save", () => {
@@ -1110,6 +1195,34 @@ describe("DailyScheduleCard - time input behaviors", () => {
     expect(range.from).toBe("↑");
   });
 
+  test("_createTimeInput stores entered seconds when seconds config is enabled", () => {
+    const hass = createHass();
+    const card = mountCard(
+      { entities: ["binary_sensor.a"], seconds: true },
+      hass,
+    );
+
+    card._createDialog();
+    card._dialog._entity = "binary_sensor.a";
+
+    const range = { from: "07:05:10", to: "08:06:20" };
+    card._dialog._schedule = [range];
+
+    const saveSpy = vi.spyOn(card, "_saveBackendEntity");
+    const row = document.createElement("div");
+    card._createTimeInput(range, "from", row);
+
+    const input = row.children[1];
+    expect(input.step).toBe("1");
+    expect(input.value).toBe("07:05:10");
+
+    input.value = "07:05:30";
+    input.onchange();
+
+    expect(range.from).toBe("07:05:30");
+    expect(saveSpy).toHaveBeenCalled();
+  });
+
   test("_getInputTimeWidth sets and removes dummy input, width capped at 100, and does nothing if already set", () => {
     vi.useFakeTimers();
 
@@ -1151,6 +1264,32 @@ describe("DailyScheduleCard - time input behaviors", () => {
     const before2 = card.children.length;
     card._getInputTimeWidth();
     expect(card.children.length).toBe(before2);
+
+    HTMLInputElement.prototype.getBoundingClientRect = original;
+  });
+
+  test("_getInputTimeWidth caps width at 140 when seconds config is enabled", () => {
+    vi.useFakeTimers();
+
+    const hass = createHass({
+      states: {
+        "sensor.a": {
+          state: "on",
+          attributes: { friendly_name: "A", effective_schedule: [] },
+        },
+      },
+    });
+    const card = mountCard({ entities: ["sensor.a"], seconds: true }, hass);
+    vi.runAllTimers();
+
+    const original = HTMLInputElement.prototype.getBoundingClientRect;
+    HTMLInputElement.prototype.getBoundingClientRect = () => ({ width: 140 });
+
+    card._input_time_width = null;
+    card._getInputTimeWidth();
+    vi.runAllTimers();
+
+    expect(card._input_time_width).toBe(140);
 
     HTMLInputElement.prototype.getBoundingClientRect = original;
   });
@@ -1309,6 +1448,10 @@ describe("DailyScheduleCard - config form", () => {
         selector: { text: {} },
       },
       {
+        name: "seconds",
+        selector: { boolean: {} },
+      },
+      {
         name: "entities",
         required: true,
         selector: {
@@ -1335,6 +1478,7 @@ describe("DailyScheduleCard - config form", () => {
         type: "custom:daily-schedule-card",
         title: "Daily Schedule",
         card: true,
+        seconds: true,
         template: "{{ states(entity_id) }}",
         entities: ["binary_sensor.schedule_a", "binary_sensor.schedule_b"],
       }),
@@ -1398,6 +1542,9 @@ describe("DailyScheduleCard - config form", () => {
     );
     expect(computeLabel({ name: "entities" }, localize)).toBe(
       "ui.panel.lovelace.editor.card.generic.entities (ui.panel.lovelace.editor.card.config.required)",
+    );
+    expect(computeLabel({ name: "seconds" }, localize)).toBe(
+      "ui.panel.lovelace.editor.card.clock.show_seconds",
     );
     expect(computeLabel({ name: "unknown_option" }, localize)).toBe(
       "unknown_option",
