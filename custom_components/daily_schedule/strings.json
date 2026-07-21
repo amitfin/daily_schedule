@@ -24,5 +24,63 @@
         }
       }
     }
+  },
+  "common": {
+    "condition_behavior_name": "Condition passes if",
+    "condition_for_name": "For at least",
+    "trigger_behavior_name": "Trigger when",
+    "trigger_for_name": "For at least"
+  },
+  "conditions": {
+    "is_off": {
+      "description": "Tests if a daily schedule is currently off.",
+      "fields": {
+        "behavior": {
+          "name": "[%key:component::daily_schedule::common::condition_behavior_name%]"
+        },
+        "for": {
+          "name": "[%key:component::daily_schedule::common::condition_for_name%]"
+        }
+      },
+      "name": "Daily schedule is off"
+    },
+    "is_on": {
+      "description": "Tests if a daily schedule is currently on.",
+      "fields": {
+        "behavior": {
+          "name": "[%key:component::daily_schedule::common::condition_behavior_name%]"
+        },
+        "for": {
+          "name": "[%key:component::daily_schedule::common::condition_for_name%]"
+        }
+      },
+      "name": "Daily schedule is on"
+    }
+  },
+  "triggers": {
+    "turned_off": {
+      "description": "Triggers when a daily schedule turns off.",
+      "fields": {
+        "behavior": {
+          "name": "[%key:component::daily_schedule::common::trigger_behavior_name%]"
+        },
+        "for": {
+          "name": "[%key:component::daily_schedule::common::trigger_for_name%]"
+        }
+      },
+      "name": "Daily schedule turned off"
+    },
+    "turned_on": {
+      "description": "Triggers when a daily schedule turns on.",
+      "fields": {
+        "behavior": {
+          "name": "[%key:component::daily_schedule::common::trigger_behavior_name%]"
+        },
+        "for": {
+          "name": "[%key:component::daily_schedule::common::trigger_for_name%]"
+        }
+      },
+      "name": "Daily schedule turned on"
+    }
   }
 }

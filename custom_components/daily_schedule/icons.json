@@ -1,5 +1,21 @@
 {
+  "conditions": {
+    "is_off": {
+      "condition": "mdi:timetable"
+    },
+    "is_on": {
+      "condition": "mdi:timetable"
+    }
+  },
   "services": {
     "set": "mdi:timetable"
+  },
+  "triggers": {
+    "turned_off": {
+      "trigger": "mdi:timetable"
+    },
+    "turned_on": {
+      "trigger": "mdi:timetable"
+    }
   }
 }

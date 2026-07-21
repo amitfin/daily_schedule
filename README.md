@@ -20,6 +20,7 @@ _Note: The built-in [Schedule integration](https://www.home-assistant.io/integra
 - [Time Ranges](#time-ranges)
 - [Lovelace Card Configuration](#lovelace-card-configuration)
 - [Attributes](#attributes)
+- [Triggers & Conditions](#triggers--conditions)
 - [Daylight Saving Time Handling](#daylight-saving-time-handling)
 - [`set` Action](#set-action)
 - [Additional Cards](#additional-cards)
@@ -151,6 +152,37 @@ The binary sensor has the following attributes:
 2. `Effective schedule`: the actual `on` time ranges: (1) disabled ranges are ignored, (2) dynamic times (sunrise / sunset) are resolved to absolute time (changing daily), (3) the user-provided ranges are merged and duplications are removed, i.e. the list doesn't have overlapping or adjusting ranges.
 3. `Next toggle`: the next time when the binary sensor is going to change its state.
 4. `Next toggles`: a list with the 4 next times when the binary sensor is going to change its state. The 1st element is identical to `Next toggle`.
+
+## Triggers & Conditions
+
+The integration provides triggers and conditions for use in automation rules:
+
+| Trigger | Fires when a targeted entity... |
+| --- | --- |
+| `daily_schedule.turned_on` | turns `on` |
+| `daily_schedule.turned_off` | turns `off` |
+
+| Condition | Passes when a targeted entity is... |
+| --- | --- |
+| `daily_schedule.is_on` | `on` |
+| `daily_schedule.is_off` | `off` |
+
+```yaml
+trigger:
+  - trigger: daily_schedule.turned_on
+    target:
+      entity_id: binary_sensor.backyard_lights
+condition:
+  - condition: daily_schedule.is_on
+    target:
+      entity_id: binary_sensor.backyard_lights
+```
+
+Both triggers and conditions accept the standard entity-target options: `behavior` (`each` / `first` / `all` for triggers, `any` / `all` for conditions, when targeting more than one entity) and `for` (a minimum duration the state must hold).
+
+Notes:
+1. Only Daily Schedule entities are matched, even if the target (e.g. an area or device) also includes other, unrelated entities.
+2. A transition from `unknown` or `unavailable` (e.g. right after a Home Assistant restart) never fires a trigger, and such a state never satisfies a condition.
 
 ## Daylight Saving Time Handling
 
