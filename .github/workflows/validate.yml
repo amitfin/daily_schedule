@@ -11,6 +11,8 @@ on:
     branches:
       - main
 
+permissions: {}
+
 jobs:
   hassfest: # https://developers.home-assistant.io/blog/2020/04/16/hassfest
     name: Hassfest Validation
@@ -18,6 +20,8 @@ jobs:
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Run hassfest validation
         uses: home-assistant/actions/hassfest@master
@@ -28,6 +32,8 @@ jobs:
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Run HACS validation
         uses: hacs/action@main
@@ -40,6 +46,8 @@ jobs:
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v7
