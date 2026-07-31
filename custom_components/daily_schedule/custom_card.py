@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Final
 
 import homeassistant.util.dt as dt_util
 from homeassistant.components.frontend import add_extra_js_url
-from homeassistant.components.http import StaticPathConfig
+from homeassistant.components.http import StaticPathConfig  # type: ignore[attr-defined]
 from homeassistant.loader import async_get_integration
 
 from .const import DOMAIN

@@ -128,7 +128,7 @@ def test_time_range_hash() -> None:
         "entire day disabled",
     ],
 )
-def test_time_range(  # noqa: PLR0913
+def test_time_range(  # noqa: PLR0913, PLR0917
     hass: HomeAssistant,
     start: str,
     end: str,
@@ -165,7 +165,7 @@ def test_time_range(  # noqa: PLR0913
         "zero offset",
     ],
 )
-async def test_dynamic_range(  # noqa: PLR0913
+async def test_dynamic_range(  # noqa: PLR0913, PLR0917
     hass: HomeAssistant,
     freezer: FrozenDateTimeFactory,
     from_: str,
