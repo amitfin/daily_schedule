@@ -416,6 +416,34 @@ async def test_set_invalid_dynamic(
 
 
 @pytest.mark.parametrize(
+    ("data", "key"),
+    [
+        (
+            {CONF_SCHEDULE: [{CONF_FROM: "10:00", CONF_TO: "11:00", "disable": True}]},
+            "disable",
+        ),
+        (
+            {CONF_SCHEDULE: [{CONF_FROM: "10:00", CONF_TO: "11:00"}], "extra": 1},
+            "extra",
+        ),
+    ],
+    ids=["range", "top level"],
+)
+async def test_set_extra_keys(
+    hass: HomeAssistant, data: dict[str, Any], key: str
+) -> None:
+    """Test set service rejects unknown keys."""
+    entity_id = f"{Platform.BINARY_SENSOR}.my_test"
+    await setup_entity(hass, "My Test", [])
+    # The message differs between voluptuous and probatio, but names the key.
+    with pytest.raises(vol.MultipleInvalid, match=key):
+        await hass.services.async_call(
+            DOMAIN, SERVICE_SET, data, target={ATTR_ENTITY_ID: entity_id}
+        )
+    await async_cleanup(hass)
+
+
+@pytest.mark.parametrize(
     "utc",
     [True, False],
     ids=["utc", "local"],

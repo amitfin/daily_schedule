@@ -80,13 +80,11 @@ ENTRY_SCHEMA = vol.Schema(
         ),
         vol.Optional(CONF_DISABLED): cv.boolean,
     },
-    extra=vol.ALLOW_EXTRA,
 )
 SERVICE_SET_SCHEMA = cv.make_entity_service_schema(
     {
         vol.Required(CONF_SCHEDULE): vol.All(cv.ensure_list, [ENTRY_SCHEMA]),
     },
-    extra=vol.ALLOW_EXTRA,
 )
 
 
