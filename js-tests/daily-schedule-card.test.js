@@ -439,6 +439,64 @@ describe("DailyScheduleCard - content creation, update, schedules & template", (
     expect(row.innerText).toMatch(/sensor\.missing/i);
   });
 
+  test.each([
+    ["card", { card: true }],
+    ["rows", {}],
+  ])("rebuilds content when a missing entity appears (%s)", (_, extra) => {
+    const stateB = {
+      state: "off",
+      attributes: { friendly_name: "B", schedule: [], effective_schedule: [] },
+    };
+    const card = mountCard(
+      { entities: ["sensor.a", "sensor.b"], ...extra },
+      createHass({ states: { "sensor.b": stateB } }),
+    );
+    const oldContent = card._content;
+    const dialog = card._dialog;
+    expect(oldContent._rows).toHaveLength(1);
+
+    const range = { from: "08:00:00", to: "09:00:00" };
+    card.hass = createHass({
+      states: {
+        "sensor.a": {
+          state: "on",
+          attributes: {
+            friendly_name: "A",
+            schedule: [range],
+            effective_schedule: [range],
+          },
+        },
+        "sensor.b": stateB,
+      },
+    });
+
+    expect(card._content).not.toBe(oldContent);
+    expect(card.contains(oldContent)).toBe(false);
+    expect(card.contains(card._content)).toBe(true);
+    expect(card.querySelectorAll("ha-card")).toHaveLength(extra.card ? 1 : 0);
+    expect(card._content._rows).toHaveLength(2);
+    const rowA = card._content._rows[0];
+    expect(rowA._content._value_element.innerHTML).toContain("08:00-09:00");
+
+    expect(card._dialog).toBe(dialog);
+    expect(card.contains(dialog)).toBe(true);
+    rowA._content.onclick();
+    expect(dialog._schedule).toEqual([range]);
+  });
+
+  test("does not rebuild content when no entity was missing", () => {
+    const attributes = { schedule: [], effective_schedule: [] };
+    const card = mountCard(
+      { entities: ["sensor.a"] },
+      createHass({ states: { "sensor.a": { state: "off", attributes } } }),
+    );
+    const content = card._content;
+    card.hass = createHass({
+      states: { "sensor.a": { state: "on", attributes } },
+    });
+    expect(card._content).toBe(content);
+  });
+
   test("row uses name override, else friendly_name, else entity", () => {
     const hass = createHass({
       states: {

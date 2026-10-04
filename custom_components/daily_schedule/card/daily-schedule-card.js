@@ -11,17 +11,22 @@ class DailyScheduleCard extends HTMLElement {
     } else {
       this._dialog.hass = hass;
     }
+    if (this._content?._missing.some((entity) => hass.states[entity])) {
+      // A missing entity appeared: rebuild the content.
+      this._root.remove();
+      this._content = null;
+    }
     if (!this._content) {
       this._content = this._createContent();
       if (this._config.title || this._config.card) {
-        const card = document.createElement("ha-card");
-        card.header = this._config.title;
+        this._root = document.createElement("ha-card");
+        this._root.header = this._config.title;
         this._content.classList.add("card-content");
-        card.appendChild(this._content);
-        this.appendChild(card);
+        this._root.appendChild(this._content);
       } else {
-        this.appendChild(this._content);
+        this._root = this._content;
       }
+      this.appendChild(this._root);
     } else {
       this._updateContent();
     }
@@ -112,6 +117,7 @@ class DailyScheduleCard extends HTMLElement {
   _createContent() {
     const content = document.createElement("DIV");
     content._rows = [];
+    content._missing = [];
     for (const entry of this._config.entities) {
       const entity = entry.entity || entry;
       const row = document.createElement("DIV");
@@ -131,6 +137,7 @@ class DailyScheduleCard extends HTMLElement {
         content._rows.push(row);
       } else {
         row.innerText = `Entity not found: ${entity}`;
+        content._missing.push(entity);
       }
       content.appendChild(row);
     }
