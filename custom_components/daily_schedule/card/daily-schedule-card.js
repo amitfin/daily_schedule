@@ -209,11 +209,16 @@ class DailyScheduleCard extends HTMLElement {
   }
 
   _rowTemplateValue(row) {
+    let unsubscribed = false;
     const subscribed = this._hass.connection.subscribeMessage(
       (message) => {
+        if (message.error !== undefined && message.level !== "ERROR") {
+          return; // A warning: the template still renders, the result follows.
+        }
         const value_element = row._content._value_element;
         // The result is a native type (number, list, ...), not always a string.
-        const result = message.result ?? "";
+        // With report_errors, a failure arrives as an error message instead.
+        const result = message.error ?? message.result ?? "";
         const text =
           typeof result === "object" ? JSON.stringify(result) : String(result);
         if (text.length) {
@@ -225,12 +230,18 @@ class DailyScheduleCard extends HTMLElement {
         } else {
           value_element.innerHTML = "&empty;";
         }
-        subscribed.then((unsub) => unsub());
+        // An error can arrive twice (before and after the subscription result).
+        if (!unsubscribed) {
+          unsubscribed = true;
+          subscribed.then((unsub) => unsub());
+        }
       },
       {
         type: "render_template",
         template: row._template_value,
         variables: { entity_id: row._entity },
+        // Otherwise HA sends nothing on errors, and the subscription stays open.
+        report_errors: true,
       },
     );
   }

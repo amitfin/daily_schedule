@@ -813,6 +813,78 @@ describe("DailyScheduleCard - content creation, update, schedules & template", (
     expect(value.textContent).toBe(expected);
   });
 
+  test("template error is shown and the subscription is closed once", async () => {
+    const unsub = vi.fn();
+    const subscribeMessage = vi.fn((cb, payload) => {
+      subscribeMessage._last = { cb, payload };
+      return Promise.resolve(unsub);
+    });
+    const hass = createHass({
+      states: {
+        "sensor.a": {
+          state: "on",
+          attributes: { friendly_name: "A", effective_schedule: [] },
+        },
+      },
+      subscribeMessageImpl: subscribeMessage,
+    });
+    const card = mountCard(
+      { entities: [{ entity: "sensor.a", template: "{{ 1 / 0 }}" }] },
+      hass,
+    );
+
+    const last = subscribeMessage._last;
+    expect(last.payload.report_errors).toBe(true);
+
+    // HA can send the error both before and after the subscription result.
+    const error = {
+      error: "ZeroDivisionError: division by zero",
+      level: "ERROR",
+    };
+    last.cb(error);
+    last.cb(error);
+    await flushMicrotasks(2);
+
+    const value = card._content._rows[0]._content._value_element;
+    expect(value.textContent).toBe("ZeroDivisionError: division by zero");
+    expect(unsub).toHaveBeenCalledTimes(1);
+  });
+
+  test("template warnings are skipped until the result arrives", async () => {
+    const unsub = vi.fn();
+    const subscribeMessage = vi.fn((cb, payload) => {
+      subscribeMessage._last = { cb, payload };
+      return Promise.resolve(unsub);
+    });
+    const hass = createHass({
+      states: {
+        "sensor.a": {
+          state: "on",
+          attributes: { friendly_name: "A", effective_schedule: [] },
+        },
+      },
+      subscribeMessageImpl: subscribeMessage,
+    });
+    const card = mountCard(
+      { entities: [{ entity: "sensor.a", template: "{{ x }}y" }] },
+      hass,
+    );
+    const value = card._content._rows[0]._content._value_element;
+    const before = value.textContent;
+
+    // The template still renders: HA sends the warning first, then the result.
+    const last = subscribeMessage._last;
+    last.cb({ error: "'x' is undefined", level: "WARNING" });
+    await flushMicrotasks(2);
+    expect(value.textContent).toBe(before);
+    expect(unsub).not.toHaveBeenCalled();
+
+    last.cb({ result: "y" });
+    await flushMicrotasks(2);
+    expect(value.textContent).toBe("y");
+    expect(unsub).toHaveBeenCalledTimes(1);
+  });
+
   test("_updateContent updates icon hass/stateObj and recomputes value", () => {
     const hass1 = createHass({
       states: {
