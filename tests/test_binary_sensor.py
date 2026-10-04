@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import logging
+import re
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -403,7 +404,9 @@ async def test_set_invalid_dynamic(
     """Test set service with invalid dynamic ranges."""
     entity_id = f"{Platform.BINARY_SENSOR}.my_test"
     await setup_entity(hass, "My Test", [])
-    with pytest.raises(vol.MultipleInvalid):
+    with pytest.raises(
+        vol.MultipleInvalid, match=re.escape("↑ (sunrise) / ↓ (sunset)")
+    ):
         await hass.services.async_call(
             DOMAIN,
             SERVICE_SET,

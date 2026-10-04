@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
 
 import homeassistant.helpers.config_validation as cv
 import homeassistant.util.dt as dt_util
@@ -56,28 +56,30 @@ def remove_micros_and_tz(time: datetime.time) -> str:
     return time.replace(microsecond=0, tzinfo=None).isoformat()
 
 
+INVALID_TIME: Final = (
+    f"should be a time (HH:MM or HH:MM:SS), or {SUNRISE_SYMBOL} (sunrise) / "
+    f"{SUNSET_SYMBOL} (sunset) with an optional offset in minutes, "
+    f"e.g. {SUNRISE_SYMBOL}-30"
+)
+
+
 def dynamic_time(value: Any) -> str:
-    """Validate and transform a time string to a time object."""
+    """Validate a sunrise or sunset time with an optional minutes offset."""
     time = cv.string(value)
     if not time.startswith((SUNRISE_SYMBOL, SUNSET_SYMBOL)):
-        error = (
-            f"should begin with sunrise symbol ({SUNRISE_SYMBOL}) "
-            f"or sunset symbol ({{SUNSET_SYMBOL}})"
-        )
-        raise vol.Invalid(error)
+        raise vol.Invalid(INVALID_TIME)
     if len(time) > 1:
         vol.Coerce(int)(time[1:])
     return time
 
 
+TIME_SCHEMA = vol.Any(
+    vol.All(cv.time, remove_micros_and_tz), dynamic_time, msg=INVALID_TIME
+)
 ENTRY_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_FROM): vol.Any(
-            vol.All(cv.time, remove_micros_and_tz), dynamic_time
-        ),
-        vol.Required(CONF_TO): vol.Any(
-            vol.All(cv.time, remove_micros_and_tz), dynamic_time
-        ),
+        vol.Required(CONF_FROM): TIME_SCHEMA,
+        vol.Required(CONF_TO): TIME_SCHEMA,
         vol.Optional(CONF_DISABLED): cv.boolean,
     },
 )
