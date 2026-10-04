@@ -6,8 +6,10 @@ from typing import TYPE_CHECKING, Final
 
 import homeassistant.helpers.config_validation as cv
 from homeassistant.const import Platform
+from homeassistant.helpers import service
 
-from .const import DOMAIN
+from .binary_sensor import SERVICE_SET_SCHEMA
+from .const import DOMAIN, SERVICE_SET
 from .custom_card import publish_card
 
 if TYPE_CHECKING:
@@ -20,7 +22,15 @@ CONFIG_SCHEMA: Final = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, _: ConfigType) -> bool:
-    """Set up custom actions."""
+    """Set up the card and the actions."""
+    service.async_register_platform_entity_service(
+        hass,
+        DOMAIN,
+        SERVICE_SET,
+        entity_domain=Platform.BINARY_SENSOR,
+        schema=SERVICE_SET_SCHEMA,
+        func="async_set",
+    )
     await publish_card(hass)
     return True
 

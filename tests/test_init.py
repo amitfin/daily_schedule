@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from homeassistant.const import Platform
 from homeassistant.helpers import entity_registry as er
+from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.daily_schedule.const import (
@@ -13,6 +14,7 @@ from custom_components.daily_schedule.const import (
     CONF_SCHEDULE,
     CONF_TO,
     DOMAIN,
+    SERVICE_SET,
 )
 
 if TYPE_CHECKING:
@@ -59,3 +61,10 @@ async def test_setup_change_remove_config_entry(hass: HomeAssistant) -> None:
     # Check the state and entity registry entry are removed.
     assert hass.states.get(entity_id) is None
     assert registry.async_get(entity_id) is None
+
+
+async def test_set_action_without_entries(hass: HomeAssistant) -> None:
+    """Test the set action is registered even when there are no entries."""
+    assert await async_setup_component(hass, DOMAIN, {})
+    await hass.async_block_till_done()
+    assert hass.services.has_service(DOMAIN, SERVICE_SET)

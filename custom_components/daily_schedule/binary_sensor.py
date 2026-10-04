@@ -11,7 +11,6 @@ import homeassistant.util.dt as dt_util
 import voluptuous as vol
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import entity_platform
 from homeassistant.helpers import event as event_helper
 
 from .const import (
@@ -26,7 +25,6 @@ from .const import (
     CONF_UTC,
     LOGGER,
     NEXT_TOGGLES_COUNT,
-    SERVICE_SET,
     SUNRISE_SYMBOL,
     SUNSET_SYMBOL,
 )
@@ -100,8 +98,6 @@ async def async_setup_entry(
         DailyScheduleSensor(hass, config_entry)
     )
     async_add_entities([config_entry.runtime_data.entity])
-    platform = entity_platform.async_get_current_platform()
-    platform.async_register_entity_service(SERVICE_SET, SERVICE_SET_SCHEMA, "async_set")
 
 
 class DailyScheduleSensor(BinarySensorEntity):
