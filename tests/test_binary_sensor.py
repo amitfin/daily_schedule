@@ -8,10 +8,18 @@ import re
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, Mock, patch
 
+import homeassistant.util.dt as dt_util
 import pytest
 import pytz
 import voluptuous as vol
-from homeassistant.const import ATTR_ENTITY_ID, STATE_OFF, STATE_ON, Platform
+from homeassistant.const import (
+    ATTR_ENTITY_ID,
+    STATE_OFF,
+    STATE_ON,
+    SUN_EVENT_SUNRISE,
+    Platform,
+)
+from homeassistant.helpers import sun
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
     async_fire_time_changed,
@@ -590,6 +598,39 @@ async def test_dynamic_update(
             freezer.time_to_freeze + datetime.timedelta(hours=5, minutes=53, seconds=21)
         ).timestamp()
     )
+
+    await async_cleanup(hass)
+
+
+async def test_dynamic_next_toggles(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Test future toggles use the sun times of their own day."""
+    hass.config.latitude = 59.91
+    hass.config.longitude = 10.75
+    await hass.config.async_set_time_zone("Europe/Oslo")
+    tz = dt_util.get_time_zone("Europe/Oslo")
+    freezer.move_to(datetime.datetime(2026, 3, 10, 22, 0, tzinfo=tz))
+    await setup_entity(
+        hass, "My Test", [{CONF_FROM: SUNRISE_SYMBOL, CONF_TO: "12:00:00"}]
+    )
+
+    sunrises = [
+        dt_util.as_local(
+            sun.get_astral_event_date(hass, SUN_EVENT_SUNRISE, day)
+        ).replace(microsecond=0)
+        for day in (datetime.date(2026, 3, 11), datetime.date(2026, 3, 12))
+    ]
+    assert sunrises[0] != sunrises[1].replace(day=11)  # Sun times change daily.
+    state = hass.states.get(f"{Platform.BINARY_SENSOR}.my_test")
+    assert state
+    assert state.attributes[ATTR_NEXT_TOGGLES] == [
+        sunrises[0],
+        datetime.datetime(2026, 3, 11, 12, 0, tzinfo=tz),
+        sunrises[1],
+        datetime.datetime(2026, 3, 12, 12, 0, tzinfo=tz),
+    ]
 
     await async_cleanup(hass)
 

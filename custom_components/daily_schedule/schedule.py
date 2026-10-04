@@ -10,7 +10,7 @@ from homeassistant.const import (
     SUN_EVENT_SUNSET,
 )
 from homeassistant.helpers import sun
-from homeassistant.util.dt import as_local, as_utc, now
+from homeassistant.util.dt import as_local, as_utc
 
 from .const import CONF_DISABLED, CONF_FROM, CONF_TO, SUNRISE_SYMBOL, SUNSET_SYMBOL
 
@@ -73,17 +73,18 @@ class TimeRange:
 class TimeRangeConfig:
     """Time range configuration."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913, PLR0917
         self,
         hass: HomeAssistant,
         from_: str,
         to: str,
         disabled: bool,  # noqa: FBT001
         utc: bool,  # noqa: FBT001
+        date: datetime.date,
     ) -> None:
-        """Initialize the object."""
-        self._from, from_time = self.resolve_time(hass, from_, utc)
-        self._to, to_time = self.resolve_time(hass, to, utc)
+        """Initialize the object for the given (local) date."""
+        self._from, from_time = self.resolve_time(hass, from_, utc, date)
+        self._to, to_time = self.resolve_time(hass, to, utc, date)
         self._dynamic = any(
             value.startswith((SUNRISE_SYMBOL, SUNSET_SYMBOL)) for value in (from_, to)
         )
@@ -99,8 +100,9 @@ class TimeRangeConfig:
         hass: HomeAssistant,
         value: str,
         utc: bool,  # noqa: FBT001
+        date: datetime.date,
     ) -> tuple[str, datetime.time | None]:
-        """Normalize the value and resolve it (None if no sunrise or sunset today)."""
+        """Normalize the value and resolve it (None if no sunrise or sunset)."""
         if not value.startswith((SUNRISE_SYMBOL, SUNSET_SYMBOL)):
             absolute = datetime.time.fromisoformat(value)
             return absolute.isoformat(), absolute
@@ -112,6 +114,7 @@ class TimeRangeConfig:
             event := sun.get_astral_event_date(
                 hass,
                 SUN_EVENT_SUNRISE if value[0] == SUNRISE_SYMBOL else SUN_EVENT_SUNSET,
+                date,
             )
         ) is None:
             time = None
@@ -123,7 +126,7 @@ class TimeRangeConfig:
             )
             if offset:
                 time = (
-                    datetime.datetime.combine(now().date(), time)
+                    datetime.datetime.combine(date, time)
                     + datetime.timedelta(minutes=offset)
                 ).time()
 
@@ -151,8 +154,13 @@ class Schedule:
         schedule: list[dict[str, Any]],
         skip_reversed: bool,  # noqa: FBT001
         utc: bool,  # noqa: FBT001
+        date: datetime.date,
     ) -> None:
-        """Create a list of TimeRanges representing the schedule."""
+        """Create the schedule for the given (local) date."""
+        self._hass = hass
+        self._input = schedule
+        self._utc = utc
+        self._date = date
         self._config = sorted(
             [
                 TimeRangeConfig(
@@ -161,6 +169,7 @@ class Schedule:
                     time_range[CONF_TO],
                     time_range.get(CONF_DISABLED, False),
                     utc,
+                    self._date,
                 )
                 for time_range in schedule
             ],
@@ -266,8 +275,45 @@ class Schedule:
         """Serialize schedule as a list using absolute time (without sunrise/sunset)."""
         return [time_range.to_dict() for time_range in self._schedule]
 
+    def _for_date(self, date: datetime.date) -> Schedule:
+        """Return the schedule resolved for the given (local) date."""
+        if date == self._date:
+            return self
+        return Schedule(self._hass, self._input, self._skip_reversed, self._utc, date)
+
     def next_update(self, date: datetime.datetime) -> datetime.datetime | None:
         """Calculate the next date and time when the state is going to change."""
+        if not self.is_dynamic():
+            return self._next_static_update(date)
+
+        # Sun times change daily, and the entity re-resolves them at local midnight.
+        # Use each day's schedule until its midnight, for today and tomorrow.
+        schedule = self._for_date(as_local(date).date())
+        state = schedule.containing(date.time())
+        for _ in range(2):
+            local = as_local(date)
+            # Through UTC, so a non-existent midnight (DST at 00:00) becomes 01:00.
+            next_midnight = (
+                datetime.datetime.combine(
+                    local.date() + datetime.timedelta(days=1),
+                    MIDNIGHT,
+                    tzinfo=local.tzinfo,
+                )
+                .astimezone(datetime.UTC)
+                .astimezone(date.tzinfo)
+            )
+            # Same class, so accessing its private method is fine.
+            result = schedule._next_static_update(date)  # noqa: SLF001
+            if result is not None and result < next_midnight:
+                return result
+            schedule = self._for_date(as_local(next_midnight).date())
+            if schedule.containing(next_midnight.time()) != state:
+                return next_midnight
+            date = next_midnight
+        return None
+
+    def _next_static_update(self, date: datetime.datetime) -> datetime.datetime | None:
+        """Calculate the next update, assuming the sun times don't change."""
         if not self._schedule:
             return None
 

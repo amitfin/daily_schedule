@@ -142,6 +142,7 @@ def test_time_range(  # noqa: PLR0913, PLR0917
             [{CONF_FROM: start, CONF_TO: end, CONF_DISABLED: disabled}],
             False,  # noqa: FBT003
             utc=False,
+            date=dt_util.now().date(),
         ).containing(datetime.time.fromisoformat(time))
         is result
     )
@@ -179,7 +180,9 @@ async def test_dynamic_range(  # noqa: PLR0913, PLR0917
 ) -> None:
     """Test dynamic from and to."""
     freezer.move_to("2025-03-12T00:00:00")
-    test = TimeRangeConfig(hass, from_, to, False, utc=False)  # noqa: FBT003
+    test = TimeRangeConfig(
+        hass, from_, to, disabled=False, utc=False, date=dt_util.now().date()
+    )
     assert test.to_dict() == {CONF_FROM: from_string, CONF_TO: to_string}
     time_range = test.time_range
     assert time_range is not None
@@ -189,7 +192,9 @@ async def test_dynamic_range(  # noqa: PLR0913, PLR0917
 @patch("homeassistant.helpers.sun.get_astral_event_date", return_value=None)
 def test_sun_not_resolvable(_: Mock, hass: HomeAssistant) -> None:  # noqa: PT019
     """Test a range is inactive on days without sunrise or sunset."""
-    config = TimeRangeConfig(hass, "↑-30", "12:00", False, utc=False)  # noqa: FBT003
+    config = TimeRangeConfig(
+        hass, "↑-30", "12:00", disabled=False, utc=False, date=dt_util.now().date()
+    )
     assert config.to_dict() == {CONF_FROM: "↑-30", CONF_TO: "12:00:00"}
     assert config.time_range is None
 
@@ -201,6 +206,7 @@ def test_sun_not_resolvable(_: Mock, hass: HomeAssistant) -> None:  # noqa: PT01
         ],
         False,  # noqa: FBT003
         utc=False,
+        date=dt_util.now().date(),
     )
     assert schedule.to_list() == [
         {CONF_FROM: "18:00:00", CONF_TO: "20:00:00"},
@@ -217,6 +223,7 @@ def test_sun_not_resolvable(_: Mock, hass: HomeAssistant) -> None:  # noqa: PT01
         ],
         False,  # noqa: FBT003
         utc=False,
+        date=dt_util.now().date(),
     )
     assert schedule.to_list_absolute() == []
     assert schedule.unresolved() == [
@@ -247,6 +254,7 @@ def test_time_range_to_dict(hass: HomeAssistant, param: dict[str, Any]) -> None:
             param[CONF_TO],
             param.get(CONF_DISABLED, False),
             utc=False,
+            date=dt_util.now().date(),
         ).to_dict()
         == param
     )
@@ -305,9 +313,9 @@ def test_schedule_containing(
 ) -> None:
     """Test containing method of Schedule."""
     assert (
-        Schedule(hass, schedule, skip_reversed, utc=False).containing(
-            datetime.time.fromisoformat(time)
-        )
+        Schedule(
+            hass, schedule, skip_reversed, utc=False, date=dt_util.now().date()
+        ).containing(datetime.time.fromisoformat(time))
         is result
     )
 
@@ -423,7 +431,7 @@ def test_complex_schedule(
     off: str | None,
 ) -> None:
     """Test complex schedule."""
-    test = Schedule(hass, schedule, skip_reversed, utc=False)
+    test = Schedule(hass, schedule, skip_reversed, utc=False, date=dt_util.now().date())
     if on is not None:
         assert test.containing(datetime.time.fromisoformat(on)) is True
     if off is not None:
@@ -455,7 +463,9 @@ def test_complex_schedule(
 )
 def test_to_list(hass: HomeAssistant, schedule: list[dict[str, Any]]) -> None:
     """Test schedule to string list function."""
-    str_list = Schedule(hass, schedule, skip_reversed=False, utc=False).to_list()
+    str_list = Schedule(
+        hass, schedule, skip_reversed=False, utc=False, date=dt_util.now().date()
+    ).to_list()
     schedule.sort(key=lambda time_range: time_range[CONF_FROM])
     assert str_list == schedule
 
@@ -494,7 +504,9 @@ def test_merge(
 ) -> None:
     """Test merging logic."""
     assert (
-        Schedule(hass, schedule, skip_reversed=False, utc=False).to_list_absolute()
+        Schedule(
+            hass, schedule, skip_reversed=False, utc=False, date=dt_util.now().date()
+        ).to_list_absolute()
         == expected
     )
 
@@ -536,7 +548,9 @@ def test_dynamic(
 ) -> None:
     """Test is_dynamic logic."""
     assert (
-        Schedule(hass, schedule, skip_reversed=False, utc=False).is_dynamic()
+        Schedule(
+            hass, schedule, skip_reversed=False, utc=False, date=dt_util.now().date()
+        ).is_dynamic()
         == expected
     )
 
@@ -589,6 +603,7 @@ def test_next_update(
         ],
         skip_reversed=False,
         utc=False,
+        date=dt_util.now().date(),
     ).next_update(now) == (
         now + datetime.timedelta(seconds=next_update_sec_offset)
         if next_update_sec_offset is not None
@@ -850,9 +865,9 @@ def test_next_update_dst(
 ) -> None:
     """Test next update during DST transitions."""
     assert (
-        Schedule(hass, schedule, skip_reversed=False, utc=False).next_updates(
-            now, len(updates)
-        )
+        Schedule(
+            hass, schedule, skip_reversed=False, utc=False, date=dt_util.now().date()
+        ).next_updates(now, len(updates))
         == updates
     )
 
@@ -876,6 +891,7 @@ def test_next_updates(
         ],
         skip_reversed=False,
         utc=False,
+        date=dt_util.now().date(),
     ).next_updates(now, 5) == [
         now + datetime.timedelta(hours=1),
         now + datetime.timedelta(hours=2),
@@ -904,4 +920,57 @@ def test_sort_off_timestamps(
         ],
         skip_reversed=False,
         utc=False,
+        date=dt_util.now().date(),
     ).next_update(now) == now + datetime.timedelta(hours=13)
+
+
+@patch("homeassistant.helpers.sun.get_astral_event_date")
+def test_next_updates_dynamic_midnight(mock_sun: Mock, hass: HomeAssistant) -> None:
+    """Test a toggle at midnight when the next day's sun times change the state."""
+    today = datetime.date(2026, 6, 1)
+    # Sunset moves 20 seconds later every day.
+    mock_sun.side_effect = lambda _hass, _event, date: (
+        datetime.datetime.combine(date, datetime.time(19, 59, 50), tzinfo=TZ_IL)
+        + datetime.timedelta(seconds=20 * (date - today).days)
+    )
+
+    # Today 23:59:50 -> 01:00 (crosses midnight), tomorrow 00:00:10 -> 01:00.
+    schedule = Schedule(
+        hass,
+        [{CONF_FROM: "↓+240", CONF_TO: "01:00"}],
+        skip_reversed=False,
+        utc=False,
+        date=today,
+    )
+    assert schedule.next_updates(
+        datetime.datetime(2026, 6, 1, 23, 0, tzinfo=TZ_IL), 4
+    ) == [
+        datetime.datetime(2026, 6, 1, 23, 59, 50, tzinfo=TZ_IL),
+        datetime.datetime(2026, 6, 2, 0, 0, tzinfo=TZ_IL),
+        datetime.datetime(2026, 6, 2, 0, 0, 10, tzinfo=TZ_IL),
+        datetime.datetime(2026, 6, 2, 1, 0, tzinfo=TZ_IL),
+    ]
+
+
+async def test_next_updates_dynamic_dst_at_midnight(hass: HomeAssistant) -> None:
+    """Test the midnight switch when DST starts at midnight (00:00 doesn't exist)."""
+    hass.config.latitude = -33.45
+    hass.config.longitude = -70.67
+    await hass.config.async_set_time_zone("America/Santiago")
+    tz = dt_util.get_time_zone("America/Santiago")
+    schedule = Schedule(
+        hass,
+        [{CONF_FROM: "↑-431", CONF_TO: "05:30"}],
+        skip_reversed=False,
+        utc=False,
+        date=datetime.date(2026, 9, 5),
+    )
+    # On 2026-09-06 the clock jumps from 00:00 to 01:00.
+    assert schedule.next_updates(
+        datetime.datetime(2026, 9, 5, 0, 43, tzinfo=tz), 4
+    ) == [
+        datetime.datetime(2026, 9, 5, 5, 30, tzinfo=tz),
+        datetime.datetime(2026, 9, 5, 23, 44, 25, tzinfo=tz),
+        datetime.datetime(2026, 9, 6, 5, 30, tzinfo=tz),
+        datetime.datetime(2026, 9, 7, 0, 41, 45, tzinfo=tz),
+    ]

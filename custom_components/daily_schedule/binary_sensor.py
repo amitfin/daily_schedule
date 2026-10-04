@@ -126,6 +126,7 @@ class DailyScheduleSensor(BinarySensorEntity):
             self._config_entry.options.get(CONF_SCHEDULE, []),
             self._skip_reversed,
             self._utc,
+            dt_util.now().date(),
         )
         self._attr_extra_state_attributes = {
             CONF_SCHEDULE: self._schedule.to_list(),
@@ -174,7 +175,11 @@ class DailyScheduleSensor(BinarySensorEntity):
             options={
                 **self._config_entry.options,
                 CONF_SCHEDULE: Schedule(
-                    self._hass, schedule, self._skip_reversed, self._utc
+                    self._hass,
+                    schedule,
+                    self._skip_reversed,
+                    self._utc,
+                    dt_util.now().date(),
                 ).to_list(),
             },
         )
@@ -191,6 +196,7 @@ class DailyScheduleSensor(BinarySensorEntity):
                 self._attr_extra_state_attributes[CONF_SCHEDULE],
                 self._skip_reversed,
                 self._utc,
+                dt_util.now().date(),
             )
             self._attr_extra_state_attributes[ATTR_EFFECTIVE_SCHEDULE] = (
                 self._schedule.to_list_absolute()
