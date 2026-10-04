@@ -311,6 +311,9 @@ class Schedule:
             result = result.replace(second=0, microsecond=0)
             while result != result.astimezone(datetime.UTC).astimezone(result.tzinfo):
                 result += MINUTE
+            # Not a toggle if the state is the same on both sides of the gap.
+            if self.containing(result.time()) == self.containing(date.time()):
+                result = self.next_update(result) or result
             return result
 
         # Handle ambiguous time (fall back) due to backward jump, e.g. 2am => 1am.

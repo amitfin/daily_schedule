@@ -791,6 +791,38 @@ def test_next_update(
                 datetime.datetime(2025, 3, 28, 3, 20, tzinfo=TZ_IL),
             ],
         ),
+        (
+            [
+                {
+                    CONF_FROM: "02:45:00",
+                    CONF_TO: "03:00:00",
+                },
+            ],
+            datetime.datetime(2025, 3, 28, 0, 48, tzinfo=TZ_IL),
+            [
+                datetime.datetime(2025, 3, 29, 2, 45, tzinfo=TZ_IL),
+                datetime.datetime(2025, 3, 29, 3, 0, tzinfo=TZ_IL),
+            ],
+        ),
+        (
+            [
+                {
+                    CONF_FROM: "10:30:00",
+                    CONF_TO: "02:00:00",
+                },
+                {
+                    CONF_FROM: "02:15:00",
+                    CONF_TO: "09:45:00",
+                },
+            ],
+            datetime.datetime(2025, 3, 28, 1, 0, tzinfo=TZ_IL),
+            [
+                datetime.datetime(2025, 3, 28, 9, 45, tzinfo=TZ_IL),
+                datetime.datetime(2025, 3, 28, 10, 30, tzinfo=TZ_IL),
+                datetime.datetime(2025, 3, 29, 2, 0, tzinfo=TZ_IL),
+                datetime.datetime(2025, 3, 29, 2, 15, tzinfo=TZ_IL),
+            ],
+        ),
     ],
     ids=[
         "inside fold1",
@@ -806,6 +838,8 @@ def test_next_update(
         "ambiguous seconds",
         "cross midnight fall back",
         "gap interleaved",
+        "gap no change",
+        "gap stays on",
     ],
 )
 def test_next_update_dst(
