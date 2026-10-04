@@ -211,9 +211,16 @@ class DailyScheduleCard extends HTMLElement {
   _rowTemplateValue(row) {
     const subscribed = this._hass.connection.subscribeMessage(
       (message) => {
-        row._content._value_element.innerHTML = message.result.length
-          ? `<bdi dir="ltr">${message.result}</bdi>`
-          : "&empty;";
+        const value_element = row._content._value_element;
+        if (message.result.length) {
+          // Text, not HTML: the result may include untrusted strings.
+          const bdi = document.createElement("bdi");
+          bdi.dir = "ltr";
+          bdi.textContent = message.result;
+          value_element.replaceChildren(bdi);
+        } else {
+          value_element.innerHTML = "&empty;";
+        }
         subscribed.then((unsub) => unsub());
       },
       {

@@ -762,6 +762,28 @@ describe("DailyScheduleCard - content creation, update, schedules & template", (
     expect(unsub).toHaveBeenCalledTimes(2);
   });
 
+  test("template result is shown as text, not HTML", () => {
+    const hass = createHass({
+      states: {
+        "sensor.a": {
+          state: "on",
+          attributes: { friendly_name: "A", effective_schedule: [] },
+        },
+      },
+    });
+    const card = mountCard(
+      { entities: [{ entity: "sensor.a", template: "{{ x }}" }] },
+      hass,
+    );
+
+    hass.connection.subscribeMessage._last.cb({ result: '<img src="x">' });
+
+    const value = card._content._rows[0]._content._value_element;
+    expect(value.querySelector("img")).toBeNull();
+    expect(value.querySelector("bdi").textContent).toBe('<img src="x">');
+    expect(value.querySelector("bdi").dir).toBe("ltr");
+  });
+
   test("_updateContent updates icon hass/stateObj and recomputes value", () => {
     const hass1 = createHass({
       states: {
