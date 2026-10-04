@@ -784,6 +784,35 @@ describe("DailyScheduleCard - content creation, update, schedules & template", (
     expect(value.querySelector("bdi").dir).toBe("ltr");
   });
 
+  test.each([
+    [2, "2"],
+    [true, "true"],
+    [false, "false"],
+    [0, "0"],
+    [[1, 2], "[1,2]"],
+    [{ a: 1 }, '{"a":1}'],
+    ["", "∅"],
+    [null, "∅"],
+  ])("template result %j is shown as %s", (result, expected) => {
+    const hass = createHass({
+      states: {
+        "sensor.a": {
+          state: "on",
+          attributes: { friendly_name: "A", effective_schedule: [] },
+        },
+      },
+    });
+    const card = mountCard(
+      { entities: [{ entity: "sensor.a", template: "{{ x }}" }] },
+      hass,
+    );
+
+    hass.connection.subscribeMessage._last.cb({ result });
+
+    const value = card._content._rows[0]._content._value_element;
+    expect(value.textContent).toBe(expected);
+  });
+
   test("_updateContent updates icon hass/stateObj and recomputes value", () => {
     const hass1 = createHass({
       states: {

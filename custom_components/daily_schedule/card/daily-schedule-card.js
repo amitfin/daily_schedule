@@ -212,11 +212,15 @@ class DailyScheduleCard extends HTMLElement {
     const subscribed = this._hass.connection.subscribeMessage(
       (message) => {
         const value_element = row._content._value_element;
-        if (message.result.length) {
+        // The result is a native type (number, list, ...), not always a string.
+        const result = message.result ?? "";
+        const text =
+          typeof result === "object" ? JSON.stringify(result) : String(result);
+        if (text.length) {
           // Text, not HTML: the result may include untrusted strings.
           const bdi = document.createElement("bdi");
           bdi.dir = "ltr";
-          bdi.textContent = message.result;
+          bdi.textContent = text;
           value_element.replaceChildren(bdi);
         } else {
           value_element.innerHTML = "&empty;";
