@@ -141,6 +141,7 @@ def test_time_range(  # noqa: PLR0913, PLR0917
             hass,
             [{CONF_FROM: start, CONF_TO: end, CONF_DISABLED: disabled}],
             False,  # noqa: FBT003
+            utc=False,
         ).containing(datetime.time.fromisoformat(time))
         is result
     )
@@ -178,7 +179,7 @@ async def test_dynamic_range(  # noqa: PLR0913, PLR0917
 ) -> None:
     """Test dynamic from and to."""
     freezer.move_to("2025-03-12T00:00:00")
-    test = TimeRangeConfig(hass, from_, to, False)  # noqa: FBT003
+    test = TimeRangeConfig(hass, from_, to, False, utc=False)  # noqa: FBT003
     assert test.to_dict() == {CONF_FROM: from_string, CONF_TO: to_string}
     time_range = test.time_range
     assert time_range is not None
@@ -188,7 +189,7 @@ async def test_dynamic_range(  # noqa: PLR0913, PLR0917
 @patch("homeassistant.helpers.sun.get_astral_event_date", return_value=None)
 def test_sun_not_resolvable(_: Mock, hass: HomeAssistant) -> None:  # noqa: PT019
     """Test a range is inactive on days without sunrise or sunset."""
-    config = TimeRangeConfig(hass, "↑-30", "12:00", False)  # noqa: FBT003
+    config = TimeRangeConfig(hass, "↑-30", "12:00", False, utc=False)  # noqa: FBT003
     assert config.to_dict() == {CONF_FROM: "↑-30", CONF_TO: "12:00:00"}
     assert config.time_range is None
 
@@ -199,6 +200,7 @@ def test_sun_not_resolvable(_: Mock, hass: HomeAssistant) -> None:  # noqa: PT01
             {CONF_FROM: "↑-30", CONF_TO: "12:00"},
         ],
         False,  # noqa: FBT003
+        utc=False,
     )
     assert schedule.to_list() == [
         {CONF_FROM: "18:00:00", CONF_TO: "20:00:00"},
@@ -214,6 +216,7 @@ def test_sun_not_resolvable(_: Mock, hass: HomeAssistant) -> None:  # noqa: PT01
             {CONF_FROM: SUNRISE_SYMBOL, CONF_TO: "12:00", CONF_DISABLED: True},
         ],
         False,  # noqa: FBT003
+        utc=False,
     )
     assert schedule.to_list_absolute() == []
     assert schedule.unresolved() == [
@@ -239,7 +242,11 @@ def test_time_range_to_dict(hass: HomeAssistant, param: dict[str, Any]) -> None:
     """Test TimeRange to_dict."""
     assert (
         TimeRangeConfig(
-            hass, param[CONF_FROM], param[CONF_TO], param.get(CONF_DISABLED, False)
+            hass,
+            param[CONF_FROM],
+            param[CONF_TO],
+            param.get(CONF_DISABLED, False),
+            utc=False,
         ).to_dict()
         == param
     )
@@ -298,7 +305,7 @@ def test_schedule_containing(
 ) -> None:
     """Test containing method of Schedule."""
     assert (
-        Schedule(hass, schedule, skip_reversed).containing(
+        Schedule(hass, schedule, skip_reversed, utc=False).containing(
             datetime.time.fromisoformat(time)
         )
         is result
@@ -416,7 +423,7 @@ def test_complex_schedule(
     off: str | None,
 ) -> None:
     """Test complex schedule."""
-    test = Schedule(hass, schedule, skip_reversed)
+    test = Schedule(hass, schedule, skip_reversed, utc=False)
     if on is not None:
         assert test.containing(datetime.time.fromisoformat(on)) is True
     if off is not None:
@@ -448,7 +455,7 @@ def test_complex_schedule(
 )
 def test_to_list(hass: HomeAssistant, schedule: list[dict[str, Any]]) -> None:
     """Test schedule to string list function."""
-    str_list = Schedule(hass, schedule, skip_reversed=False).to_list()
+    str_list = Schedule(hass, schedule, skip_reversed=False, utc=False).to_list()
     schedule.sort(key=lambda time_range: time_range[CONF_FROM])
     assert str_list == schedule
 
@@ -486,7 +493,10 @@ def test_merge(
     hass: HomeAssistant, schedule: list[dict[str, Any]], expected: list[dict[str, Any]]
 ) -> None:
     """Test merging logic."""
-    assert Schedule(hass, schedule, skip_reversed=False).to_list_absolute() == expected
+    assert (
+        Schedule(hass, schedule, skip_reversed=False, utc=False).to_list_absolute()
+        == expected
+    )
 
 
 @pytest.mark.parametrize(
@@ -525,7 +535,10 @@ def test_dynamic(
     expected: bool,  # noqa: FBT001
 ) -> None:
     """Test is_dynamic logic."""
-    assert Schedule(hass, schedule, skip_reversed=False).is_dynamic() == expected
+    assert (
+        Schedule(hass, schedule, skip_reversed=False, utc=False).is_dynamic()
+        == expected
+    )
 
 
 @pytest.mark.parametrize(
@@ -575,6 +588,7 @@ def test_next_update(
             for (from_sec_offset, to_sec_offset, disabled) in schedule
         ],
         skip_reversed=False,
+        utc=False,
     ).next_update(now) == (
         now + datetime.timedelta(seconds=next_update_sec_offset)
         if next_update_sec_offset is not None
@@ -802,7 +816,9 @@ def test_next_update_dst(
 ) -> None:
     """Test next update during DST transitions."""
     assert (
-        Schedule(hass, schedule, skip_reversed=False).next_updates(now, len(updates))
+        Schedule(hass, schedule, skip_reversed=False, utc=False).next_updates(
+            now, len(updates)
+        )
         == updates
     )
 
@@ -825,6 +841,7 @@ def test_next_updates(
             },
         ],
         skip_reversed=False,
+        utc=False,
     ).next_updates(now, 5) == [
         now + datetime.timedelta(hours=1),
         now + datetime.timedelta(hours=2),
@@ -852,4 +869,5 @@ def test_sort_off_timestamps(
             },
         ],
         skip_reversed=False,
+        utc=False,
     ).next_update(now) == now + datetime.timedelta(hours=13)

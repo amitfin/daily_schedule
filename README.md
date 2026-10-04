@@ -246,12 +246,14 @@ active_state: 'off'
 ## UTC Option
 
 When UTC option is set (not the default), the time should be expressed in [UTC](https://en.wikipedia.org/wiki/Coordinated_Universal_Time) instead of local time. This option can be used when absolute time is needed, which is not impacted by daylight saving changes throughout the year.
-This is an advanced option that should not be used in the majority of the use cases. It should be used only if there is a very concrete reason to do so. This option should not be used when sunrise or sunset are used since they are resolved by using the local time zone.
+This is an advanced option that should not be used in the majority of the use cases. It should be used only if there is a very concrete reason to do so.
+Sunrise and sunset are converted to UTC as well.
 
 ## Skip-Reversed Option
 
 When enabled (disabled by default), this option ignores any time range with sunrise or sunset where the `to` time is earlier than or equal to the `from` time. This behavior is dynamic. For example, a range defined as sunrise → 7:00 AM may become reversed during parts of the year if sunrise occurs after 7:00 AM. In such cases, the range is applied only when sunrise is earlier than 7:00 AM, and automatically skipped when sunrise is at 7:00 AM or later.
 A time range with absolute `from` and `to` times is never skipped, even if it's reversed and this option is enabled. Such a time range should be deleted or disabled manually if it's not needed.
+With the UTC option, `from` and `to` are compared in UTC. For example, in western time zones, sunset is after midnight UTC during the summer, so a range ending at sunset can be skipped.
 
 ## Removing the Integration
 

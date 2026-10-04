@@ -477,6 +477,44 @@ async def test_utc(
     await async_cleanup(hass)
 
 
+async def test_utc_dynamic(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Test sunrise and sunset are resolved in UTC when the UTC option is set."""
+    hass.config.latitude = 40.7
+    hass.config.longitude = -74.0
+    await hass.config.async_set_time_zone("America/New_York")
+    freezer.move_to("2026-06-21T12:00:00+00:00")  # 08:00 local.
+    entity_id = f"{Platform.BINARY_SENSOR}.my_test"
+    await setup_entity(
+        hass,
+        "My Test",
+        [{CONF_FROM: SUNRISE_SYMBOL, CONF_TO: "↓+30"}],
+        utc=True,
+    )
+
+    # Local sunrise is 05:25:18 and sunset is 20:30:25 (UTC-4).
+    state = hass.states.get(entity_id)
+    assert state
+    assert state.state == STATE_ON
+    assert state.attributes[ATTR_EFFECTIVE_SCHEDULE] == [
+        {CONF_FROM: "09:25:18", CONF_TO: "01:00:25"}
+    ]
+    assert state.attributes[ATTR_NEXT_TOGGLE] == datetime.datetime(
+        2026, 6, 22, 1, 0, 25, tzinfo=datetime.UTC
+    )
+
+    freezer.move_to("2026-06-22T01:00:25+00:00")  # 21:00:25 local.
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    state = hass.states.get(entity_id)
+    assert state
+    assert state.state == STATE_OFF
+
+    await async_cleanup(hass)
+
+
 async def test_dynamic_update(
     hass: HomeAssistant,
     freezer: FrozenDateTimeFactory,

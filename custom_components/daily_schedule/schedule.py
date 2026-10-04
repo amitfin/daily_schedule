@@ -10,7 +10,7 @@ from homeassistant.const import (
     SUN_EVENT_SUNSET,
 )
 from homeassistant.helpers import sun
-from homeassistant.util.dt import as_local, now
+from homeassistant.util.dt import as_local, as_utc, now
 
 from .const import CONF_DISABLED, CONF_FROM, CONF_TO, SUNRISE_SYMBOL, SUNSET_SYMBOL
 
@@ -79,10 +79,11 @@ class TimeRangeConfig:
         from_: str,
         to: str,
         disabled: bool,  # noqa: FBT001
+        utc: bool,  # noqa: FBT001
     ) -> None:
         """Initialize the object."""
-        self._from, from_time = self.resolve_time(hass, from_)
-        self._to, to_time = self.resolve_time(hass, to)
+        self._from, from_time = self.resolve_time(hass, from_, utc)
+        self._to, to_time = self.resolve_time(hass, to, utc)
         self._dynamic = any(
             value.startswith((SUNRISE_SYMBOL, SUNSET_SYMBOL)) for value in (from_, to)
         )
@@ -94,7 +95,10 @@ class TimeRangeConfig:
         self.disabled = disabled
 
     def resolve_time(
-        self, hass: HomeAssistant, value: str
+        self,
+        hass: HomeAssistant,
+        value: str,
+        utc: bool,  # noqa: FBT001
     ) -> tuple[str, datetime.time | None]:
         """Normalize the value and resolve it (None if no sunrise or sunset today)."""
         if not value.startswith((SUNRISE_SYMBOL, SUNSET_SYMBOL)):
@@ -112,7 +116,11 @@ class TimeRangeConfig:
         ) is None:
             time = None
         else:
-            time = as_local(event).time().replace(microsecond=0, tzinfo=None)
+            time = (
+                (as_utc if utc else as_local)(event)
+                .time()
+                .replace(microsecond=0, tzinfo=None)
+            )
             if offset:
                 time = (
                     datetime.datetime.combine(now().date(), time)
@@ -142,6 +150,7 @@ class Schedule:
         hass: HomeAssistant,
         schedule: list[dict[str, Any]],
         skip_reversed: bool,  # noqa: FBT001
+        utc: bool,  # noqa: FBT001
     ) -> None:
         """Create a list of TimeRanges representing the schedule."""
         self._config = sorted(
@@ -151,6 +160,7 @@ class Schedule:
                     time_range[CONF_FROM],
                     time_range[CONF_TO],
                     time_range.get(CONF_DISABLED, False),
+                    utc,
                 )
                 for time_range in schedule
             ],
