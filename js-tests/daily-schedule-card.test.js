@@ -959,6 +959,51 @@ describe("DailyScheduleCard - dialog behavior (open, add, toggle, remove, close,
     expect(saveSpy).toHaveBeenCalled();
   });
 
+  test.each([
+    ["rejected", () => Promise.reject(new Error("backend failed"))],
+    ["accepted", () => Promise.resolve()],
+  ])(
+    "dialog edits don't modify the entity state (save %s)",
+    async (_, impl) => {
+      const hass = createHass({
+        states: {
+          "sensor.a": {
+            state: "on",
+            attributes: {
+              friendly_name: "A",
+              schedule: [{ from: "08:00:00", to: "09:00:00" }],
+              effective_schedule: [],
+            },
+          },
+        },
+        callServiceImpl: vi.fn(impl),
+      });
+
+      const card = mountCard({ entities: ["sensor.a"] }, hass);
+      card._content._rows[0]._content.onclick();
+
+      const firstRowEl = card._dialog._scroller.children[0];
+      firstRowEl.querySelector("ha-switch").dispatchEvent(new Event("change"));
+      const fromInput = firstRowEl.querySelector("input");
+      fromInput.value = "07:30";
+      fromInput.onchange();
+      await flushMicrotasks(4);
+
+      expect(card._dialog._schedule).toEqual([
+        { from: "07:30:00", to: "09:00:00", disabled: true },
+      ]);
+      expect(hass.states["sensor.a"].attributes.schedule).toEqual([
+        { from: "08:00:00", to: "09:00:00" },
+      ]);
+
+      // Reopening shows the stored schedule, not the unconfirmed edits.
+      card._content._rows[0]._content.onclick();
+      expect(card._dialog._schedule).toEqual([
+        { from: "08:00:00", to: "09:00:00" },
+      ]);
+    },
+  );
+
   test("_createDialogRow sets consistent marginTop", () => {
     const hass = createHass({
       states: {

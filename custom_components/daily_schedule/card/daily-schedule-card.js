@@ -170,7 +170,9 @@ class DailyScheduleCard extends HTMLElement {
       this._dialog._entity = entity;
       this._dialog.headerTitle = name;
       this._dialog._message.innerText = "";
-      this._dialog._schedule = [...this._getStateSchedule(entity)];
+      this._dialog._schedule = this._getStateSchedule(entity).map((range) => ({
+        ...range,
+      }));
       this._createDialogRows();
       this._dialog.open = true;
     };
