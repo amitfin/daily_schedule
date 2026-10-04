@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+import logging
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -582,5 +583,130 @@ async def test_skip_reversed(
     state = hass.states.get(entity_id)
     assert state
     assert state.attributes[ATTR_EFFECTIVE_SCHEDULE] == []
+
+    await async_cleanup(hass)
+
+
+async def set_polar_location(hass: HomeAssistant) -> None:
+    """Set a location in northern Norway, which has polar night in winter."""
+    hass.config.latitude = 69.65
+    hass.config.longitude = 18.96
+    await hass.config.async_set_time_zone("Europe/Oslo")
+
+
+@pytest.mark.allowed_logs(["binary_sensor.my_test: time ranges without sunrise"])
+async def test_polar_night(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Test ranges without sunrise or sunset are inactive, and others keep working."""
+    caplog.set_level(logging.INFO, logger="custom_components.daily_schedule")
+    await set_polar_location(hass)
+    freezer.move_to("2026-11-22T12:00:00+01:00")  # Last day with a sunrise.
+    entity_id = f"{Platform.BINARY_SENSOR}.my_test"
+    await setup_entity(
+        hass,
+        "My Test",
+        [
+            {CONF_FROM: SUNRISE_SYMBOL, CONF_TO: SUNSET_SYMBOL},
+            {CONF_FROM: "18:00:00", CONF_TO: "20:00:00"},
+        ],
+    )
+    state = hass.states.get(entity_id)
+    assert state
+    assert len(state.attributes[ATTR_EFFECTIVE_SCHEDULE]) == 2
+
+    def unresolved_logs() -> list[str]:
+        return [
+            record.getMessage()
+            for record in caplog.records
+            if record.name == "custom_components.daily_schedule"
+        ]
+
+    assert unresolved_logs() == []
+
+    # Polar night begins: the sunrise to sunset range is inactive.
+    for time, expected_state in (
+        ("2026-11-23T00:00:00+01:00", STATE_OFF),
+        ("2026-11-23T18:00:00+01:00", STATE_ON),
+        ("2026-11-23T20:00:00+01:00", STATE_OFF),
+        ("2026-11-24T00:00:00+01:00", STATE_OFF),
+        ("2026-11-24T18:00:00+01:00", STATE_ON),
+    ):
+        freezer.move_to(time)
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+        state = hass.states.get(entity_id)
+        assert state
+        assert state.state == expected_state
+        assert state.attributes[ATTR_EFFECTIVE_SCHEDULE] == [
+            {CONF_FROM: "18:00:00", CONF_TO: "20:00:00"}
+        ]
+        assert state.attributes[CONF_SCHEDULE][0] == {
+            CONF_FROM: SUNRISE_SYMBOL,
+            CONF_TO: SUNSET_SYMBOL,
+        }
+
+    # Logged once, not on every refresh.
+    assert unresolved_logs() == [
+        (
+            "binary_sensor.my_test: time ranges without sunrise or sunset today "
+            "are inactive: [{'from': '↑', 'to': '↓'}]"
+        )
+    ]
+
+    # The sun is back.
+    freezer.move_to("2027-01-21T00:00:00+01:00")
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    state = hass.states.get(entity_id)
+    assert state
+    assert len(state.attributes[ATTR_EFFECTIVE_SCHEDULE]) == 2
+    assert unresolved_logs()[1:] == [
+        "binary_sensor.my_test: all time ranges are resolved again"
+    ]
+
+    await async_cleanup(hass)
+
+
+@pytest.mark.allowed_logs(["binary_sensor.my_test: time ranges without sunrise"])
+async def test_polar_night_setup_and_set(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory
+) -> None:
+    """Test setup and the set action work on a day without sunrise or sunset."""
+    await set_polar_location(hass)
+    freezer.move_to("2026-12-20T12:00:00+01:00")
+    entity_id = f"{Platform.BINARY_SENSOR}.my_test"
+    await setup_entity(
+        hass,
+        "My Test",
+        [
+            {CONF_FROM: SUNRISE_SYMBOL, CONF_TO: "12:00:00"},
+            {CONF_FROM: "18:00:00", CONF_TO: "20:00:00"},
+        ],
+    )
+    state = hass.states.get(entity_id)
+    assert state
+    assert state.state == STATE_OFF
+    assert state.attributes[ATTR_EFFECTIVE_SCHEDULE] == [
+        {CONF_FROM: "18:00:00", CONF_TO: "20:00:00"}
+    ]
+
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_SET,
+        {CONF_SCHEDULE: [{CONF_FROM: SUNSET_SYMBOL, CONF_TO: "23:00"}]},
+        target={ATTR_ENTITY_ID: entity_id},
+        blocking=True,
+    )
+    await hass.async_block_till_done()
+    state = hass.states.get(entity_id)
+    assert state
+    assert state.attributes[CONF_SCHEDULE] == [
+        {CONF_FROM: SUNSET_SYMBOL, CONF_TO: "23:00:00"}
+    ]
+    assert state.attributes[ATTR_EFFECTIVE_SCHEDULE] == []
+    assert state.attributes[ATTR_NEXT_TOGGLE] is None
 
     await async_cleanup(hass)

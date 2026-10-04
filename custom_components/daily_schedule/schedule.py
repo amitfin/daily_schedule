@@ -9,7 +9,6 @@ from homeassistant.const import (
     SUN_EVENT_SUNRISE,
     SUN_EVENT_SUNSET,
 )
-from homeassistant.exceptions import IntegrationError
 from homeassistant.helpers import sun
 from homeassistant.util.dt import as_local, now
 
@@ -71,7 +70,7 @@ class TimeRange:
         }
 
 
-class TimeRangeConfig(TimeRange):
+class TimeRangeConfig:
     """Time range configuration."""
 
     def __init__(
@@ -82,17 +81,28 @@ class TimeRangeConfig(TimeRange):
         disabled: bool,  # noqa: FBT001
     ) -> None:
         """Initialize the object."""
-        self._dynamic_from, from_time = self.resolve_dynamic(hass, from_)
-        self._dynamic_to, to_time = self.resolve_dynamic(hass, to)
-        super().__init__(from_time, to_time)
+        self._from, from_time = self.resolve_time(hass, from_)
+        self._to, to_time = self.resolve_time(hass, to)
+        self._dynamic = any(
+            value.startswith((SUNRISE_SYMBOL, SUNSET_SYMBOL)) for value in (from_, to)
+        )
+        self.time_range = (
+            TimeRange(from_time, to_time)
+            if from_time is not None and to_time is not None
+            else None
+        )
         self.disabled = disabled
 
-    def resolve_dynamic(
+    def resolve_time(
         self, hass: HomeAssistant, value: str
-    ) -> tuple[str | None, datetime.time]:
-        """Resolve dynamic time range."""
+    ) -> tuple[str, datetime.time | None]:
+        """Normalize the value and resolve it (None if no sunrise or sunset today)."""
         if not value.startswith((SUNRISE_SYMBOL, SUNSET_SYMBOL)):
-            return None, datetime.time.fromisoformat(value)
+            absolute = datetime.time.fromisoformat(value)
+            return absolute.isoformat(), absolute
+
+        offset = int(value[1:]) if len(value) > 1 else 0
+        value = f"{value[0]}{offset:+}" if offset else value[0]
 
         if (
             event := sun.get_astral_event_date(
@@ -100,44 +110,28 @@ class TimeRangeConfig(TimeRange):
                 SUN_EVENT_SUNRISE if value[0] == SUNRISE_SYMBOL else SUN_EVENT_SUNSET,
             )
         ) is None:
-            # Should never happen, but the above call can return None.
-            error_message = "Unable to resolve sunrise/sunset time."
-            raise IntegrationError(error_message)
-        time = as_local(event).time().replace(microsecond=0, tzinfo=None)
-        offset = int(value[1:]) if len(value) > 1 else 0
+            time = None
+        else:
+            time = as_local(event).time().replace(microsecond=0, tzinfo=None)
+            if offset:
+                time = (
+                    datetime.datetime.combine(now().date(), time)
+                    + datetime.timedelta(minutes=offset)
+                ).time()
 
-        if offset == 0:
-            return value[:1], time
-
-        time = (
-            datetime.datetime.combine(now().date(), time)
-            + datetime.timedelta(minutes=offset)
-        ).time()
-        return f"{value[0]}{offset:+}", time
+        return value, time
 
     def is_dynamic(self) -> bool:
         """Check if the time range is dynamic."""
-        return self._dynamic_from is not None or self._dynamic_to is not None
-
-    def containing(self, time: datetime.time) -> bool:
-        """Check if the time is inside the range."""
-        return not self.disabled and super().containing(time)
+        return self._dynamic
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize the object as a dict."""
         return {
-            CONF_FROM: self.from_.isoformat()
-            if self._dynamic_from is None
-            else self._dynamic_from,
-            CONF_TO: self.to.isoformat()
-            if self._dynamic_to is None
-            else self._dynamic_to,
+            CONF_FROM: self._from,
+            CONF_TO: self._to,
             **({CONF_DISABLED: True} if self.disabled else {}),
         }
-
-    def to_dict_absolute(self) -> dict[str, Any]:
-        """Serialize the object as a dict after sunrise/sunset resolution."""
-        return super().to_dict()
 
 
 class Schedule:
@@ -159,7 +153,9 @@ class Schedule:
                     time_range.get(CONF_DISABLED, False),
                 )
                 for time_range in schedule
-            ]
+            ],
+            # Ranges without sunrise or sunset today go last.
+            key=lambda config: (config.time_range is None, config.time_range),
         )
         self._skip_reversed = skip_reversed
         self._calculate_schedule()
@@ -170,26 +166,33 @@ class Schedule:
 
         # There is nothing to do for a single time range.
         if len(self._config) == 1:
-            if not self._config[0].disabled and (
-                not self._skip_reversed
-                or not self._config[0].reversed
-                or not self._config[0].is_dynamic()
-            ):
-                self._schedule.append(
-                    TimeRange(self._config[0].from_, self._config[0].to)
+            config = self._config[0]
+            if (
+                not config.disabled
+                and (time_range := config.time_range) is not None
+                and (
+                    not self._skip_reversed
+                    or not time_range.reversed
+                    or not config.is_dynamic()
                 )
+            ):
+                self._schedule.append(time_range)
         else:
             # Break reversed time ranges into two separate time ranges.
             schedule = []
-            for time_range in self._config:
-                if time_range.disabled or (
-                    self._skip_reversed
-                    and time_range.reversed
-                    and time_range.is_dynamic()
+            for config in self._config:
+                if (
+                    config.disabled
+                    or (time_range := config.time_range) is None
+                    or (
+                        self._skip_reversed
+                        and time_range.reversed
+                        and config.is_dynamic()
+                    )
                 ):
                     continue
                 if not time_range.reversed or time_range.to == MIDNIGHT:
-                    schedule.append(TimeRange(time_range.from_, time_range.to))
+                    schedule.append(time_range)
                 else:
                     schedule.append(TimeRange(time_range.from_, MIDNIGHT))
                     schedule.append(TimeRange(MIDNIGHT, time_range.to))
@@ -240,6 +243,14 @@ class Schedule:
     def to_list(self) -> list[dict[str, Any]]:
         """Serialize the object as a list."""
         return [time_range.to_dict() for time_range in self._config]
+
+    def unresolved(self) -> list[dict[str, Any]]:
+        """Serialize the enabled ranges unresolved today (no sunrise or sunset)."""
+        return [
+            config.to_dict()
+            for config in self._config
+            if not config.disabled and config.time_range is None
+        ]
 
     def to_list_absolute(self) -> list[dict[str, Any]]:
         """Serialize schedule as a list using absolute time (without sunrise/sunset)."""

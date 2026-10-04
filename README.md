@@ -83,6 +83,8 @@ There are 3 ways to specify time:
 
 By default, the card displays and edits absolute times with minute precision. Set the card's `seconds` option to `true` to display and edit absolute times with second precision.
 
+On days without a sunrise or sunset (polar regions), a range that uses the missing event is inactive for that day, and a warning is logged.
+
 ## Lovelace Card Configuration
 
 ### Visual Editor

@@ -24,6 +24,7 @@ from .const import (
     CONF_SKIP_REVERSED,
     CONF_TO,
     CONF_UTC,
+    LOGGER,
     NEXT_TOGGLES_COUNT,
     SERVICE_SET,
     SUNRISE_SYMBOL,
@@ -119,6 +120,7 @@ class DailyScheduleSensor(BinarySensorEntity):
         self._config_entry = config_entry
         self._attr_unique_id = config_entry.entry_id
         self._unsub_update: Callable[[], None] | None = None
+        self._unresolved: list[dict[str, Any]] = []
         self._read_config()
 
     def _read_config(self) -> None:
@@ -192,6 +194,17 @@ class DailyScheduleSensor(BinarySensorEntity):
             self._attr_extra_state_attributes[ATTR_EFFECTIVE_SCHEDULE] = (
                 self._schedule.to_list_absolute()
             )
+
+        if (unresolved := self._schedule.unresolved()) != self._unresolved:
+            if unresolved:
+                LOGGER.warning(
+                    "%s: time ranges without sunrise or sunset today are inactive: %s",
+                    self.entity_id,
+                    unresolved,
+                )
+            else:
+                LOGGER.info("%s: all time ranges are resolved again", self.entity_id)
+            self._unresolved = unresolved
 
         next_toggles = self._schedule.next_updates(self._now(), NEXT_TOGGLES_COUNT)
         next_update = next_toggles[0] if next_toggles else None

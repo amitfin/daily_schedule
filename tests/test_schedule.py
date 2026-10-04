@@ -8,7 +8,6 @@ from unittest.mock import Mock, patch
 
 import homeassistant.util.dt as dt_util
 import pytest
-from homeassistant.exceptions import IntegrationError
 
 from custom_components.daily_schedule.const import (
     CONF_DISABLED,
@@ -136,11 +135,13 @@ def test_time_range(  # noqa: PLR0913, PLR0917
     disabled: bool,  # noqa: FBT001
     result: bool,  # noqa: FBT001
 ) -> None:
-    """Test for TimeRange class."""
+    """Test a single time range."""
     assert (
-        TimeRangeConfig(hass, start, end, disabled).containing(
-            datetime.time.fromisoformat(time)
-        )
+        Schedule(
+            hass,
+            [{CONF_FROM: start, CONF_TO: end, CONF_DISABLED: disabled}],
+            False,  # noqa: FBT003
+        ).containing(datetime.time.fromisoformat(time))
         is result
     )
 
@@ -179,14 +180,46 @@ async def test_dynamic_range(  # noqa: PLR0913, PLR0917
     freezer.move_to("2025-03-12T00:00:00")
     test = TimeRangeConfig(hass, from_, to, False)  # noqa: FBT003
     assert test.to_dict() == {CONF_FROM: from_string, CONF_TO: to_string}
-    assert test.to_dict_absolute() == {CONF_FROM: from_absolute, CONF_TO: to_absolute}
+    time_range = test.time_range
+    assert time_range is not None
+    assert time_range.to_dict() == {CONF_FROM: from_absolute, CONF_TO: to_absolute}
 
 
 @patch("homeassistant.helpers.sun.get_astral_event_date", return_value=None)
 def test_sun_not_resolvable(_: Mock, hass: HomeAssistant) -> None:  # noqa: PT019
-    """Test error when sun is not resolvable."""
-    with pytest.raises(IntegrationError):
-        TimeRangeConfig(hass, SUNRISE_SYMBOL, SUNSET_SYMBOL, False)  # noqa: FBT003
+    """Test a range is inactive on days without sunrise or sunset."""
+    config = TimeRangeConfig(hass, "↑-30", "12:00", False)  # noqa: FBT003
+    assert config.to_dict() == {CONF_FROM: "↑-30", CONF_TO: "12:00:00"}
+    assert config.time_range is None
+
+    schedule = Schedule(
+        hass,
+        [
+            {CONF_FROM: "18:00", CONF_TO: "20:00"},
+            {CONF_FROM: "↑-30", CONF_TO: "12:00"},
+        ],
+        False,  # noqa: FBT003
+    )
+    assert schedule.to_list() == [
+        {CONF_FROM: "18:00:00", CONF_TO: "20:00:00"},
+        {CONF_FROM: "↑-30", CONF_TO: "12:00:00"},
+    ]
+    assert schedule.to_list_absolute() == [{CONF_FROM: "18:00:00", CONF_TO: "20:00:00"}]
+    assert schedule.unresolved() == [{CONF_FROM: "↑-30", CONF_TO: "12:00:00"}]
+
+    schedule = Schedule(
+        hass,
+        [
+            {CONF_FROM: SUNSET_SYMBOL, CONF_TO: SUNRISE_SYMBOL},
+            {CONF_FROM: SUNRISE_SYMBOL, CONF_TO: "12:00", CONF_DISABLED: True},
+        ],
+        False,  # noqa: FBT003
+    )
+    assert schedule.to_list_absolute() == []
+    assert schedule.unresolved() == [
+        {CONF_FROM: SUNSET_SYMBOL, CONF_TO: SUNRISE_SYMBOL}
+    ]
+    assert schedule.next_update(datetime.datetime(2026, 12, 20, tzinfo=TZ_IL)) is None
 
 
 @pytest.mark.parametrize(
