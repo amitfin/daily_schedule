@@ -68,3 +68,24 @@ async def test_set_action_without_entries(hass: HomeAssistant) -> None:
     assert await async_setup_component(hass, DOMAIN, {})
     await hass.async_block_till_done()
     assert hass.services.has_service(DOMAIN, SERVICE_SET)
+
+
+async def test_options_update_with_disabled_entity(hass: HomeAssistant) -> None:
+    """Test changing options while the entity is disabled."""
+    config_entry = MockConfigEntry(domain=DOMAIN, title="My Test")
+    config_entry.add_to_hass(hass)
+    er.async_get(hass).async_get_or_create(
+        Platform.BINARY_SENSOR,
+        DOMAIN,
+        config_entry.entry_id,
+        config_entry=config_entry,
+        disabled_by=er.RegistryEntryDisabler.USER,
+    )
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+    assert config_entry.runtime_data is None
+
+    options = {CONF_SCHEDULE: [{CONF_FROM: "01:00:00", CONF_TO: "02:00:00"}]}
+    hass.config_entries.async_update_entry(config_entry, options=options)
+    await hass.async_block_till_done()
+    assert config_entry.options == options

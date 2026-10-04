@@ -94,10 +94,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Initialize config entry."""
-    config_entry.runtime_data = DailyScheduleRuntimeData(
-        DailyScheduleSensor(hass, config_entry)
-    )
-    async_add_entities([config_entry.runtime_data.entity])
+    async_add_entities([DailyScheduleSensor(hass, config_entry)])
 
 
 class DailyScheduleSensor(BinarySensorEntity):
@@ -161,8 +158,14 @@ class DailyScheduleSensor(BinarySensorEntity):
     async def async_added_to_hass(self) -> None:
         """Run when entity about to be added to hass."""
         await super().async_added_to_hass()
+        self._config_entry.runtime_data = DailyScheduleRuntimeData(self)
         self.async_on_remove(self._clean_up_listener)
         self._update_state()
+
+    async def async_will_remove_from_hass(self) -> None:
+        """Run when entity will be removed from hass."""
+        self._config_entry.runtime_data = None
+        await super().async_will_remove_from_hass()
 
     async def async_set(self, schedule: list[dict[str, Any]]) -> None:
         """Update the config entry with the new list (non-admin support)."""

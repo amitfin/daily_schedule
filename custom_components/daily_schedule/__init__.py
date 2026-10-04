@@ -39,6 +39,7 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: DailyScheduleConfigEntry
 ) -> bool:
     """Set up entity from a config entry."""
+    entry.runtime_data = None  # Set by the entity while it's added to hass.
     await hass.config_entries.async_forward_entry_setups(
         entry, (Platform.BINARY_SENSOR,)
     )
@@ -58,7 +59,6 @@ async def async_unload_entry(
     hass: HomeAssistant, entry: DailyScheduleConfigEntry
 ) -> bool:
     """Unload a config entry."""
-    entry.runtime_data = None
     return await hass.config_entries.async_unload_platforms(
         entry, (Platform.BINARY_SENSOR,)
     )
