@@ -85,6 +85,8 @@ By default, the card displays and edits absolute times with minute precision. Se
 
 On days without a sunrise or sunset (polar regions), a range that uses the missing event is inactive for that day, and a warning is logged.
 
+Avoid offsets that can move a sunrise or sunset time past midnight. Each day uses its own sunrise and sunset, so a range starting at sunset +5 hours can resolve to 23:59:50 on one day and to 00:00:10 on the following day. In that case the sensor turns off at midnight, when the range is re-resolved, until 00:00:10. Use an absolute time instead.
+
 ## Lovelace Card Configuration
 
 ### Visual Editor
