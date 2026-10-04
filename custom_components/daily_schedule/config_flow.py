@@ -52,7 +52,9 @@ class DailyScheduleConfigFlow(ConfigFlow, domain=DOMAIN):
                 )
 
         return self.async_show_form(
-            step_id="user", data_schema=CONFIG_SCHEMA, errors=errors
+            step_id="user",
+            data_schema=CONFIG_SCHEMA,  # type: ignore[arg-type, unused-ignore]
+            errors=errors,
         )
 
     @staticmethod

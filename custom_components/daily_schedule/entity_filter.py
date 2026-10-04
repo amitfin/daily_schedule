@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from homeassistant.components.binary_sensor import DOMAIN as BINARY_SENSOR_DOMAIN
+from homeassistant.const import Platform
 from homeassistant.helpers import entity_registry as er
 
 from .const import DOMAIN
@@ -26,5 +26,5 @@ class DailyScheduleEntityFilter:
             for entity_id in entities
             if (entry := registry.async_get(entity_id)) is not None
             and entry.platform == DOMAIN
-            and entry.domain == BINARY_SENSOR_DOMAIN
+            and entry.domain == Platform.BINARY_SENSOR
         }

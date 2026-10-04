@@ -4,8 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from homeassistant.components.binary_sensor import DOMAIN as BINARY_SENSOR_DOMAIN
-from homeassistant.const import STATE_OFF, STATE_ON
+from homeassistant.const import STATE_OFF, STATE_ON, Platform
 from homeassistant.helpers.automation import DomainSpec
 from homeassistant.helpers.condition import Condition, EntityStateConditionBase
 
@@ -21,7 +20,7 @@ def _make_condition(state: str) -> type[EntityStateConditionBase]:
     class DailyScheduleCondition(DailyScheduleEntityFilter, EntityStateConditionBase):
         """Condition for a daily schedule matching a specific state."""
 
-        _domain_specs = {BINARY_SENSOR_DOMAIN: DomainSpec()}  # noqa: RUF012
+        _domain_specs = {Platform.BINARY_SENSOR: DomainSpec()}  # noqa: RUF012
         _states = {state}  # noqa: RUF012
 
     return DailyScheduleCondition
