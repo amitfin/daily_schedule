@@ -403,8 +403,11 @@ async def test_set_dynamic(hass: HomeAssistant) -> None:
         [{CONF_FROM: SUNRISE_SYMBOL, CONF_TO: ""}],
         [{CONF_FROM: "↑a", CONF_TO: SUNSET_SYMBOL}],
         [{CONF_FROM: SUNRISE_SYMBOL, CONF_TO: "↓-3a"}],
+        [{CONF_FROM: "↑+1440", CONF_TO: SUNSET_SYMBOL}],
+        [{CONF_FROM: SUNRISE_SYMBOL, CONF_TO: "↓-1440"}],
+        [{CONF_FROM: "↑+9999999999", CONF_TO: SUNSET_SYMBOL}],
     ],
-    ids=["prefix", "empty", "int1", "int2"],
+    ids=["prefix", "empty", "int1", "int2", "day", "minus day", "overflow"],
 )
 async def test_set_invalid_dynamic(
     hass: HomeAssistant, schedule: list[dict[str, str]]
@@ -423,6 +426,23 @@ async def test_set_invalid_dynamic(
             },
             target={ATTR_ENTITY_ID: entity_id},
         )
+    await async_cleanup(hass)
+
+
+async def test_set_offset_limits(hass: HomeAssistant) -> None:
+    """Test offsets of up to a day minus a minute are accepted."""
+    entity_id = f"{Platform.BINARY_SENSOR}.my_test"
+    await setup_entity(hass, "My Test", [])
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_SET,
+        {CONF_SCHEDULE: [{CONF_FROM: "↑+1439", CONF_TO: "↓-1439"}]},
+        target={ATTR_ENTITY_ID: entity_id},
+        blocking=True,
+    )
+    state = hass.states.get(entity_id)
+    assert state
+    assert state.attributes[CONF_SCHEDULE] == [{CONF_FROM: "↑+1439", CONF_TO: "↓-1439"}]
     await async_cleanup(hass)
 
 

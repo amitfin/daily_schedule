@@ -222,6 +222,8 @@ The format of `from` and `to` can be one of the 3 options:
 2. ***Sunset***: start with "↓" and can have an optional positive or negative offset in minutes. For example: "↓", "↓-20", "↓+30".
 3. ***Sunrise***: start with "↑" and can have an optional positive or negative offset in minutes.
 
+The offset must be less than a day (1440 minutes).
+
 Each range also supports an optional `disabled` boolean field. When set to `true`, the range is kept in the schedule but treated as inactive (equivalent to temporarily removing it). The card's toggle switch sets this field.
 
 Notes:

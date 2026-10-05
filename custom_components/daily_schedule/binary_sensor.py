@@ -54,9 +54,10 @@ def remove_micros_and_tz(time: datetime.time) -> str:
     return time.replace(microsecond=0, tzinfo=None).isoformat()
 
 
+MINUTES_PER_DAY: Final = 24 * 60
 INVALID_TIME: Final = (
     f"should be a time (HH:MM or HH:MM:SS), or {SUNRISE_SYMBOL} (sunrise) / "
-    f"{SUNSET_SYMBOL} (sunset) with an optional offset in minutes, "
+    f"{SUNSET_SYMBOL} (sunset) with an optional offset in minutes (less than a day), "
     f"e.g. {SUNRISE_SYMBOL}-30"
 )
 
@@ -66,8 +67,9 @@ def dynamic_time(value: Any) -> str:
     time = cv.string(value)
     if not time.startswith((SUNRISE_SYMBOL, SUNSET_SYMBOL)):
         raise vol.Invalid(INVALID_TIME)
-    if len(time) > 1:
-        vol.Coerce(int)(time[1:])
+    # Only the time of day is used, so an offset of a day or more is meaningless.
+    if len(time) > 1 and abs(vol.Coerce(int)(time[1:])) >= MINUTES_PER_DAY:
+        raise vol.Invalid(INVALID_TIME)
     return time
 
 
