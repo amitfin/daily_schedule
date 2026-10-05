@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from homeassistant.config_entries import ConfigEntry
-    from homeassistant.helpers.entity_platform import AddEntitiesCallback
+    from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 
 @dataclass
@@ -90,8 +90,8 @@ SERVICE_SET_SCHEMA = cv.make_entity_service_schema(
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    config_entry: DailyScheduleConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Initialize config entry."""
     async_add_entities([DailyScheduleSensor(hass, config_entry)])
@@ -107,7 +107,9 @@ class DailyScheduleSensor(BinarySensorEntity):
         {ATTR_NEXT_TOGGLE, ATTR_NEXT_TOGGLES, ATTR_EFFECTIVE_SCHEDULE, CONF_SCHEDULE}
     )
 
-    def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry) -> None:
+    def __init__(
+        self, hass: HomeAssistant, config_entry: DailyScheduleConfigEntry
+    ) -> None:
         """Initialize object with defaults."""
         self._hass = hass
         self._config_entry = config_entry
