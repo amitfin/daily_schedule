@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+import homeassistant.util.dt as dt_util
 from homeassistant.const import Platform
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -13,6 +14,8 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
 ENTITY_ID = f"{Platform.BINARY_SENSOR}.my_test"
+# The time zone set by conftest.py.
+TIME_ZONE = dt_util.get_time_zone("Asia/Jerusalem")
 
 
 async def setup_entity(hass: HomeAssistant, schedule: list[dict[str, Any]]) -> None:

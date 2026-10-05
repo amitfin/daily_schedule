@@ -586,7 +586,7 @@ def test_next_update(
     next_update_sec_offset: int | None,
 ) -> None:
     """Test next update logic."""
-    now = datetime.datetime.fromisoformat("2000-01-01")
+    now = datetime.datetime.fromisoformat("2000-01-01").replace(tzinfo=TZ_IL)
     assert Schedule(
         hass,
         [
@@ -876,7 +876,7 @@ def test_next_updates(
     hass: HomeAssistant,
 ) -> None:
     """Test next updates."""
-    now = datetime.datetime.fromisoformat("2000-01-01")
+    now = datetime.datetime.fromisoformat("2000-01-01").replace(tzinfo=TZ_IL)
     assert Schedule(
         hass,
         [
@@ -905,7 +905,7 @@ def test_sort_off_timestamps(
     hass: HomeAssistant,
 ) -> None:
     """Test off calculation correctness when off timestamps requires sorting."""
-    now = datetime.datetime.fromisoformat("2000-01-01 22:00")
+    now = datetime.datetime.fromisoformat("2000-01-01 22:00").replace(tzinfo=TZ_IL)
     assert Schedule(
         hass,
         [
@@ -1041,3 +1041,19 @@ async def test_offset_into_repeated_hour(hass: HomeAssistant) -> None:
         datetime.datetime(2026, 10, 25, 2, 0, tzinfo=tz, fold=1).timestamp(),
         datetime.datetime(2026, 10, 25, 2, 48, 10, tzinfo=tz, fold=1).timestamp(),
     ]
+
+
+def test_next_update_naive(hass: HomeAssistant) -> None:
+    """Test a naive datetime is supported, without DST handling."""
+    now = datetime.datetime(2000, 1, 1)  # noqa: DTZ001
+    schedule = Schedule(
+        hass,
+        [{CONF_FROM: "01:00", CONF_TO: "02:00"}],
+        skip_reversed=False,
+        utc=False,
+        date=now.date(),
+    )
+    update = schedule.next_update(now)
+    assert update == datetime.datetime(2000, 1, 1, 1, 0)  # noqa: DTZ001
+    assert update is not None
+    assert update.tzinfo is None

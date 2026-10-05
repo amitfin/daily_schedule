@@ -16,7 +16,7 @@ from pytest_homeassistant_custom_component.common import (
 
 from custom_components.daily_schedule.const import CONF_FROM, CONF_TO, DOMAIN
 from custom_components.daily_schedule.trigger import TRIGGERS, async_get_triggers
-from tests.helpers import ENTITY_ID, setup_entity
+from tests.helpers import ENTITY_ID, TIME_ZONE, setup_entity
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -30,7 +30,9 @@ async def test_async_get_triggers(hass: HomeAssistant) -> None:
 @patch("homeassistant.util.dt.now")
 async def test_turned_on_and_off(mock_now: Mock, hass: HomeAssistant) -> None:
     """Test the triggers fire when a daily schedule turns on and off."""
-    mock_now.return_value = datetime.datetime.fromisoformat("2000-01-01 23:50:00")
+    mock_now.return_value = datetime.datetime.fromisoformat(
+        "2000-01-01 23:50:00"
+    ).replace(tzinfo=TIME_ZONE)
     await setup_entity(
         hass,
         [
@@ -83,7 +85,9 @@ async def test_turned_on_and_off(mock_now: Mock, hass: HomeAssistant) -> None:
 @patch("homeassistant.util.dt.now")
 async def test_ignores_foreign_entities(mock_now: Mock, hass: HomeAssistant) -> None:
     """Test the trigger doesn't fire for an entity not owned by this integration."""
-    mock_now.return_value = datetime.datetime.fromisoformat("2000-01-01 23:50:00")
+    mock_now.return_value = datetime.datetime.fromisoformat(
+        "2000-01-01 23:50:00"
+    ).replace(tzinfo=TIME_ZONE)
     await setup_entity(hass, [{CONF_FROM: "23:50:00", CONF_TO: "23:55:00"}])
 
     foreign_entity_id = f"{Platform.BINARY_SENSOR}.foreign"

@@ -39,6 +39,7 @@ from custom_components.daily_schedule.const import (
     SUNRISE_SYMBOL,
     SUNSET_SYMBOL,
 )
+from tests.helpers import TIME_ZONE
 
 if TYPE_CHECKING:
     from freezegun.api import FrozenDateTimeFactory
@@ -140,7 +141,9 @@ async def test_new_sensor(hass: HomeAssistant, schedule: list[dict[str, Any]]) -
 @patch("homeassistant.util.dt.now")
 async def test_state(mock_now: Mock, hass: HomeAssistant) -> None:
     """Test state attribute."""
-    mock_now.return_value = datetime.datetime.fromisoformat("2000-01-01 23:50:00")
+    mock_now.return_value = datetime.datetime.fromisoformat(
+        "2000-01-01 23:50:00"
+    ).replace(tzinfo=TIME_ZONE)
 
     entity_id = f"{Platform.BINARY_SENSOR}.my_test"
     await setup_entity(
@@ -213,7 +216,9 @@ async def test_next_update(
     async_track_point_in_time: AsyncMock, mock_now: Mock, hass: HomeAssistant
 ) -> None:
     """Test next update time."""
-    mock_now.return_value = datetime.datetime.fromisoformat("2000-01-01")
+    mock_now.return_value = datetime.datetime.fromisoformat("2000-01-01").replace(
+        tzinfo=TIME_ZONE
+    )
 
     in_5_minutes = mock_now.return_value + datetime.timedelta(minutes=5)
     in_10_minutes = mock_now.return_value + datetime.timedelta(minutes=10)

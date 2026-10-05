@@ -15,7 +15,7 @@ from pytest_homeassistant_custom_component.common import (
 
 from custom_components.daily_schedule.condition import CONDITIONS, async_get_conditions
 from custom_components.daily_schedule.const import CONF_FROM, CONF_TO, DOMAIN
-from tests.helpers import ENTITY_ID, setup_entity
+from tests.helpers import ENTITY_ID, TIME_ZONE, setup_entity
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -65,7 +65,9 @@ async def test_async_get_conditions(hass: HomeAssistant) -> None:
 @patch("homeassistant.util.dt.now")
 async def test_is_on_and_is_off(mock_now: Mock, hass: HomeAssistant) -> None:
     """Test the conditions match the schedule's on/off state."""
-    mock_now.return_value = datetime.datetime.fromisoformat("2000-01-01 23:50:00")
+    mock_now.return_value = datetime.datetime.fromisoformat(
+        "2000-01-01 23:50:00"
+    ).replace(tzinfo=TIME_ZONE)
     await setup_entity(hass, [{CONF_FROM: "23:50:00", CONF_TO: "23:55:00"}])
 
     is_on_calls, is_off_calls = await setup_condition_automations(hass)
