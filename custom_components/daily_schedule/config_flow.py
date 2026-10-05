@@ -59,18 +59,15 @@ class DailyScheduleConfigFlow(ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlowHandler:
+    def async_get_options_flow(
+        config_entry: ConfigEntry,  # noqa: ARG004
+    ) -> OptionsFlowHandler:
         """Get the options flow for this handler."""
-        return OptionsFlowHandler(config_entry)
+        return OptionsFlowHandler()
 
 
 class OptionsFlowHandler(OptionsFlow):
     """Handles options flow for the component."""
-
-    def __init__(self, config_entry: ConfigEntry) -> None:
-        """Initialize options flow."""
-        if "config_entry" not in dir(self):
-            self.config_entry = config_entry  # type: ignore  # noqa: PGH003
 
     async def async_step_init(self, user_input: dict[str, Any]) -> ConfigFlowResult:
         """Handle an options flow."""
