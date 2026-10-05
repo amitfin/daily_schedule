@@ -33,28 +33,16 @@ class DailyScheduleConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle a flow initialized by the user."""
-        errors: dict[str, str] = {}
-
         if user_input is not None:
-            # Verify uniqueness of the name (used as the key).
-            duplicated = filter(
-                lambda entry: entry.title == user_input[CONF_NAME],
-                self.hass.config_entries.async_entries(DOMAIN),
+            return self.async_create_entry(
+                title=user_input[CONF_NAME],
+                data={},
+                options={CONF_SCHEDULE: []},
             )
-            if list(duplicated):
-                errors["base"] = "duplicated"
-
-            if not errors:
-                return self.async_create_entry(
-                    title=user_input[CONF_NAME],
-                    data={},
-                    options={CONF_SCHEDULE: []},
-                )
 
         return self.async_show_form(
             step_id="user",
             data_schema=CONFIG_SCHEMA,  # type: ignore[arg-type, unused-ignore]
-            errors=errors,
         )
 
     @staticmethod

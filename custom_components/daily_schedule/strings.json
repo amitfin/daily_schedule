@@ -1,8 +1,5 @@
 {
   "config": {
-    "error": {
-      "duplicated": "The name should be unique."
-    },
     "step": {
       "user": {
         "title": "Add Daily Schedule Sensor",

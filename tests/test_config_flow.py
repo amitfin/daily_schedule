@@ -43,13 +43,10 @@ async def test_config_flow_no_schedule(hass: HomeAssistant) -> None:
     assert result2.get("options") == {CONF_SCHEDULE: []}
 
 
-async def test_config_flow_duplicated(hass: HomeAssistant) -> None:
-    """Test the user flow without a duplicated config entry name."""
+async def test_config_flow_duplicated_name(hass: HomeAssistant) -> None:
+    """Test a name that's already used is accepted, like in HA's helpers."""
     name = "My Test"
-    config_entry = MockConfigEntry(
-        domain=DOMAIN,
-        title=name,
-    )
+    config_entry = MockConfigEntry(domain=DOMAIN, title=name)
     config_entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()
@@ -62,8 +59,10 @@ async def test_config_flow_duplicated(hass: HomeAssistant) -> None:
         result["flow_id"],
         user_input={CONF_NAME: name},
     )
-    assert result2.get("type") == FlowResultType.FORM
-    assert (result2.get("errors") or {}).get("base") == "duplicated"
+    assert result2.get("type") == FlowResultType.CREATE_ENTRY
+    await hass.async_block_till_done()
+    assert hass.states.get("binary_sensor.my_test")
+    assert hass.states.get("binary_sensor.my_test_2")
 
 
 async def test_options_flow(hass: HomeAssistant) -> None:

@@ -1,8 +1,5 @@
 {
     "config": {
-        "error": {
-            "duplicated": "Názov by mal byť jedinečný."
-        },
         "step": {
             "user": {
                 "title": "Pridajte snímač denného plánu",
