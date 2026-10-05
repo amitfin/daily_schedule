@@ -66,3 +66,28 @@ jobs:
 
       - name: JS tests
         run: npm test
+
+  test-minimum-ha:
+    name: Tests (minimum HA version)
+    runs-on: ubuntu-latest
+    env:
+      # Pins homeassistant==2026.7.0, the minimum in hacs.json. Update both together.
+      PHCC_VERSION: "0.13.344"
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+
+      - name: Install requirements
+        run: |
+          python3 -m pip install uv --root-user-action ignore
+          uv pip install --system "pytest-homeassistant-custom-component==${PHCC_VERSION}" home-assistant-frontend
+
+      - name: Python tests
+        run: pytest
