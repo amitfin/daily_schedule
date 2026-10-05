@@ -1,0 +1,6 @@
+# Commits that only change formatting, skipped by git blame.
+# GitHub uses this file automatically. Locally:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# Normalize line endings to LF
+0dc8c9973b8f6319e06f15e98aca885c4692c382
