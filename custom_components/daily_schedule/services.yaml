@@ -1,14 +1,10 @@
 set:
-  name: Set
-  description: Set the schedule.
   target:
     entity:
       domain: binary_sensor
       integration: daily_schedule
   fields:
     schedule:
-      name: Schedule
-      description: List of the ON time ranges.
       required: true
       selector:
         object:

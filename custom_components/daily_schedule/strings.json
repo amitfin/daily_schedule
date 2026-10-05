@@ -48,6 +48,18 @@
       "name": "Daily schedule is on"
     }
   },
+  "services": {
+    "set": {
+      "description": "Set the schedule.",
+      "fields": {
+        "schedule": {
+          "description": "List of the ON time ranges.",
+          "name": "Schedule"
+        }
+      },
+      "name": "Set"
+    }
+  },
   "triggers": {
     "turned_off": {
       "description": "Triggers when a daily schedule turns off.",
