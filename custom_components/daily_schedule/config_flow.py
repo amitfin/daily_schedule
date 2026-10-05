@@ -69,7 +69,9 @@ class DailyScheduleConfigFlow(ConfigFlow, domain=DOMAIN):
 class OptionsFlowHandler(OptionsFlow):
     """Handles options flow for the component."""
 
-    async def async_step_init(self, user_input: dict[str, Any]) -> ConfigFlowResult:
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Handle an options flow."""
         if user_input is not None:
             return self.async_create_entry(
@@ -83,7 +85,7 @@ class OptionsFlowHandler(OptionsFlow):
 
         return self.async_show_form(
             step_id="init",
-            data_schema=vol.Schema(
+            data_schema=vol.Schema(  # type: ignore[arg-type, unused-ignore]
                 {
                     vol.Required(
                         CONF_UTC, default=self.config_entry.options.get(CONF_UTC, False)
