@@ -1,3 +1,6 @@
+const MISSING_FIELDS = "Missing field(s).";
+const INVALID_OFFSET = "Offset must be whole minutes, less than a day.";
+
 class DailyScheduleCard extends HTMLElement {
   set hass(hass) {
     this._hass = hass;
@@ -460,16 +463,26 @@ class DailyScheduleCard extends HTMLElement {
       if (type_symbol._type === "time") {
         value = this._normalizeTimeInput(time_input.value);
       } else {
+        if (!time_input.validity.valid) {
+          this._saveBackendEntity(); // Shows the message; nothing is saved.
+          return;
+        }
         value = type_symbol._type === "sunrise" ? sunrise : sunset;
-        if (time_input.value) {
-          const value_int = parseInt(time_input.value, 10);
-          if (value_int) {
-            value += `${value_int > 0 ? "+" : ""}${time_input.value}`;
-          }
+        // Valid means a whole number, so send it normalized (e.g. "1e3" => 1000).
+        const offset = Number(time_input.value);
+        if (offset) {
+          value += `${offset > 0 ? "+" : ""}${offset}`;
         }
       }
       if (range[type] !== value) {
         range[type] = value;
+        this._saveBackendEntity();
+      } else if (
+        [MISSING_FIELDS, INVALID_OFFSET].includes(
+          this._dialog._message.innerText,
+        )
+      ) {
+        // Earlier edits may have been held back by an invalid field: retry.
         this._saveBackendEntity();
       }
     };
@@ -482,12 +495,17 @@ class DailyScheduleCard extends HTMLElement {
     symbol._type = type;
     if (type === "sunrise" || type === "sunset") {
       input.type = "number";
+      // Whole minutes, less than a day (like the backend validation).
       input.step = "1";
+      input.min = "-1439";
+      input.max = "1439";
       input.value = parseInt(value || "0", 10);
       symbol.icon =
         type === "sunrise" ? "mdi:weather-sunny" : "mdi:weather-night";
     } else {
       input.type = "time";
+      input.removeAttribute("min");
+      input.removeAttribute("max");
       input.step = this._timeStep();
       if (value) {
         input.value = this._formatTime(value);
@@ -527,16 +545,31 @@ class DailyScheduleCard extends HTMLElement {
     return value.length === 5 ? `${value}:00` : value;
   }
 
+  _validationMessage() {
+    const schedule = this._dialog._schedule || [];
+    if (schedule.some((range) => range.from === null || range.to === null)) {
+      return MISSING_FIELDS;
+    }
+    // An invalid offset isn't in the schedule, so check the inputs themselves.
+    if (
+      [...this._dialog._scroller.querySelectorAll("input")].some(
+        (input) => !input.validity.valid,
+      )
+    ) {
+      return INVALID_OFFSET;
+    }
+    return "";
+  }
+
   _saveBackendEntity() {
     const schedule = this._dialog._schedule || [];
 
-    for (const range of schedule) {
-      if (range.from === null || range.to === null) {
-        if (this._dialog._message.innerText !== "Missing field(s).") {
-          this._dialog._message.innerText = "Missing field(s).";
-        }
-        return;
+    const message = this._validationMessage();
+    if (message) {
+      if (this._dialog._message.innerText !== message) {
+        this._dialog._message.innerText = message;
       }
+      return;
     }
 
     this._hass

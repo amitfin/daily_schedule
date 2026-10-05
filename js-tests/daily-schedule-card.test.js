@@ -1308,6 +1308,137 @@ describe("DailyScheduleCard - time input behaviors", () => {
     spySave.mockRestore();
   });
 
+  test("_createTimeInput: offsets must be whole minutes, less than a day", () => {
+    const hass = createHass({
+      states: {
+        "binary_sensor.a": {
+          state: "on",
+          attributes: {
+            friendly_name: "A",
+            schedule: [{ from: "↑", to: "01:00:00" }],
+            effective_schedule: [],
+          },
+        },
+      },
+    });
+    const card = mountCard({ entities: ["binary_sensor.a"] }, hass);
+    card._content._rows[0]._content.onclick();
+    const row = card._dialog._scroller.children[0];
+    const symbol = row.querySelectorAll("ha-icon")[0];
+    const input = row.querySelector("input");
+    const range = card._dialog._schedule[0];
+    const message = card._dialog._message;
+    expect([input.step, input.min, input.max]).toEqual(["1", "-1439", "1439"]);
+
+    for (const typed of ["0.5", "1.5", "1440", "-1440"]) {
+      input.value = typed;
+      input.onchange();
+      expect(hass.callService).not.toHaveBeenCalled();
+      expect(range.from).toBe("↑");
+      expect(message.innerText).toBe(
+        "Offset must be whole minutes, less than a day.",
+      );
+    }
+
+    for (const [typed, expected] of [
+      ["30", "↑+30"],
+      ["-20", "↑-20"],
+      ["1.0", "↑+1"],
+      ["1e3", "↑+1000"],
+      ["030", "↑+30"],
+      ["0", "↑"],
+    ]) {
+      input.value = typed;
+      input.onchange();
+      expect(range.from).toBe(expected);
+    }
+
+    // Switching to an absolute time removes the offset limits.
+    symbol.onclick(); // sunset
+    symbol.onclick(); // time
+    expect(input.type).toBe("time");
+    expect(input.hasAttribute("min")).toBe(false);
+    expect(input.hasAttribute("max")).toBe(false);
+  });
+
+  test("an invalid offset blocks saving until every field is valid", () => {
+    const hass = createHass({
+      states: {
+        "binary_sensor.a": {
+          state: "on",
+          attributes: {
+            friendly_name: "A",
+            schedule: [
+              { from: "↑", to: "08:00:00" },
+              { from: "↓", to: "23:00:00" },
+            ],
+            effective_schedule: [],
+          },
+        },
+      },
+    });
+    const card = mountCard({ entities: ["binary_sensor.a"] }, hass);
+    card._content._rows[0]._content.onclick();
+    const [row1, row2] = card._dialog._scroller.children;
+    const offset1 = row1.querySelectorAll("input")[0];
+    const offset2 = row2.querySelectorAll("input")[0];
+    const to2 = row2.querySelectorAll("input")[1];
+    const message = card._dialog._message;
+    const invalid = "Offset must be whole minutes, less than a day.";
+
+    offset1.value = "1.5";
+    offset1.onchange();
+    offset2.value = "0.5";
+    offset2.onchange();
+    expect(message.innerText).toBe(invalid);
+
+    // Fixing one isn't enough.
+    offset1.value = "10";
+    offset1.onchange();
+    expect(message.innerText).toBe(invalid);
+
+    // Editing another field doesn't save while an offset is invalid.
+    to2.value = "22:00";
+    to2.onchange();
+    expect(hass.callService).not.toHaveBeenCalled();
+
+    // Fixing the last one saves everything and clears the message.
+    offset2.value = "0";
+    offset2.onchange();
+    expect(hass.callService).toHaveBeenCalledTimes(1);
+    expect(hass.callService.mock.calls[0][2].schedule).toEqual([
+      { from: "↑+10", to: "08:00:00" },
+      { from: "↓", to: "22:00:00" },
+    ]);
+  });
+
+  test("re-entering a stored offset clears the message when all fields are valid", async () => {
+    const hass = createHass({
+      states: {
+        "binary_sensor.a": {
+          state: "on",
+          attributes: {
+            friendly_name: "A",
+            schedule: [{ from: "↑", to: "08:00:00" }],
+            effective_schedule: [],
+          },
+        },
+      },
+    });
+    const card = mountCard({ entities: ["binary_sensor.a"] }, hass);
+    card._content._rows[0]._content.onclick();
+    const offset = card._dialog._scroller.children[0].querySelector("input");
+
+    offset.value = "1.5";
+    offset.onchange();
+    expect(hass.callService).not.toHaveBeenCalled();
+    offset.value = "0"; // The stored value: the save is retried and succeeds.
+    offset.onchange();
+    await flushMicrotasks(2);
+    expect(hass.callService).toHaveBeenCalledTimes(1);
+    expect(card._dialog._message.innerText).toBe("");
+  });
+
   test("_createTimeInput: sunset initial branch, negative offsets, and time default path", () => {
     const hass = createHass();
     const card = mountCard({ entities: ["binary_sensor.a"] }, hass);
