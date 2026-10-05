@@ -119,16 +119,15 @@ class TimeRangeConfig:
         ) is None:
             time = None
         else:
+            # The offset is in real minutes (like HA's sun trigger), also across DST.
+            # Only the wall-clock time of day is kept, like any other time.
             time = (
-                (as_utc if utc else as_local)(event)
+                (as_utc if utc else as_local)(
+                    event + datetime.timedelta(minutes=offset)
+                )
                 .time()
-                .replace(microsecond=0, tzinfo=None)
+                .replace(microsecond=0, tzinfo=None, fold=0)
             )
-            if offset:
-                time = (
-                    datetime.datetime.combine(date, time)
-                    + datetime.timedelta(minutes=offset)
-                ).time()
 
         return value, time
 

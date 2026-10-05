@@ -972,5 +972,72 @@ async def test_next_updates_dynamic_dst_at_midnight(hass: HomeAssistant) -> None
         datetime.datetime(2026, 9, 5, 5, 30, tzinfo=tz),
         datetime.datetime(2026, 9, 5, 23, 44, 25, tzinfo=tz),
         datetime.datetime(2026, 9, 6, 5, 30, tzinfo=tz),
-        datetime.datetime(2026, 9, 7, 0, 41, 45, tzinfo=tz),
+        datetime.datetime(2026, 9, 6, 23, 43, 5, tzinfo=tz),  # Wraps (see README).
+    ]
+
+    # The midnight check must use 01:00, the first real time of 2026-09-06.
+    schedule = Schedule(
+        hass,
+        [{CONF_FROM: "05:15", CONF_TO: "↓+327"}],
+        skip_reversed=False,
+        utc=False,
+        date=datetime.date(2026, 9, 5),
+    )
+    assert schedule.next_updates(
+        datetime.datetime(2026, 9, 5, 18, 55, tzinfo=tz), 4
+    ) == [
+        datetime.datetime(2026, 9, 5, 23, 54, 42, tzinfo=tz),
+        datetime.datetime(2026, 9, 6, 5, 15, tzinfo=tz),
+        datetime.datetime(2026, 9, 7, 0, 56, 1, tzinfo=tz),
+        datetime.datetime(2026, 9, 7, 5, 15, tzinfo=tz),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("day", "minutes", "expected"),
+    [
+        (datetime.date(2026, 3, 29), -300, "00:52:03"),
+        (datetime.date(2026, 10, 25), -420, "01:21:10"),
+    ],
+    ids=["spring forward", "fall back"],
+)
+async def test_offset_elapsed_across_dst(
+    hass: HomeAssistant, day: datetime.date, minutes: int, expected: str
+) -> None:
+    """Test offsets are real minutes from the sun event, also across a DST change."""
+    hass.config.latitude = 59.91
+    hass.config.longitude = 10.75
+    await hass.config.async_set_time_zone("Europe/Oslo")
+    # Wall-clock arithmetic would give an hour later (spring) or earlier (fall).
+
+    config = TimeRangeConfig(
+        hass, f"↑{minutes}", "12:00", disabled=False, utc=False, date=day
+    )
+    assert config.time_range is not None
+    assert config.time_range.from_ == datetime.time.fromisoformat(expected)
+
+
+async def test_offset_into_repeated_hour(hass: HomeAssistant) -> None:
+    """Test an offset landing in the repeated hour (fall back) toggles in both."""
+    hass.config.latitude = 59.91
+    hass.config.longitude = 10.75
+    await hass.config.async_set_time_zone("Europe/Oslo")
+    tz = dt_util.get_time_zone("Europe/Oslo")
+    # On 2026-10-25 sunrise - 273 minutes is 02:48:10 in the second 02:00-03:00.
+    schedule = Schedule(
+        hass,
+        [{CONF_FROM: "20:00", CONF_TO: "↑-273"}],
+        skip_reversed=False,
+        utc=False,
+        date=datetime.date(2026, 10, 24),
+    )
+    updates = schedule.next_updates(
+        datetime.datetime(2026, 10, 24, 15, 10, tzinfo=tz), 4
+    )
+    # Compare timestamps: datetimes with the same tzinfo compare ignoring fold.
+    assert [update.timestamp() for update in updates] == [
+        datetime.datetime(2026, 10, 24, 20, 0, tzinfo=tz).timestamp(),
+        datetime.datetime(2026, 10, 25, 2, 48, 10, tzinfo=tz, fold=0).timestamp(),
+        datetime.datetime(2026, 10, 25, 2, 0, tzinfo=tz, fold=1).timestamp(),
+        datetime.datetime(2026, 10, 25, 2, 48, 10, tzinfo=tz, fold=1).timestamp(),
     ]
