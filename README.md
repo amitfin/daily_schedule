@@ -227,7 +227,7 @@ The offset must be less than a day (1440 minutes).
 Each range also supports an optional `disabled` boolean field. When set to `true`, the range is kept in the schedule but treated as inactive (equivalent to temporarily removing it). The card's toggle switch sets this field.
 
 Notes:
-1. It's uncommon to perform this action directly. Its main usage is indirectly via the [Lovelace card](https://github.com/amitfin/lovelace-daily-schedule-card).
+1. It's uncommon to perform this action directly. Its main usage is indirectly via the [Daily Schedule card](#daily-schedule-card).
 2. There is no corresponding `get`. The data already exists as attributes:
 
 ```

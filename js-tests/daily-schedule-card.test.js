@@ -281,7 +281,9 @@ describe("DailyScheduleCard - registration & basic API", () => {
     expect(entry).toBeDefined();
     expect(entry.name).toBeTruthy();
     expect(entry.description).toBeTruthy();
-    expect(entry.documentationURL).toMatch(/github/i);
+    expect(entry.documentationURL).toBe(
+      "https://github.com/amitfin/daily_schedule#daily-schedule-card",
+    );
   });
 
   test("window.customCards does not add a duplicate entry on repeated module evaluation", async () => {

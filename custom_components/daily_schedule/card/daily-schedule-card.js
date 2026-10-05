@@ -605,6 +605,7 @@ if (!window.customCards.some((card) => card.type === "daily-schedule-card")) {
     type: "daily-schedule-card",
     name: "Daily Schedule",
     description: "Card for displaying and editing Daily Schedule entities.",
-    documentationURL: "https://github.com/amitfin/lovelace-daily-schedule-card",
+    documentationURL:
+      "https://github.com/amitfin/daily_schedule#daily-schedule-card",
   });
 }
