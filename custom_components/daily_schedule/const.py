@@ -8,7 +8,7 @@ from typing import Final
 DOMAIN: Final = "daily_schedule"
 LOGGER = logging.getLogger(__package__)
 
-CONF_DISABLED = "disabled"
+CONF_DISABLED: Final = "disabled"
 CONF_FROM: Final = "from"
 CONF_TO: Final = "to"
 CONF_SCHEDULE: Final = "schedule"
