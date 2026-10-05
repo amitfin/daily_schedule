@@ -641,11 +641,14 @@ async def test_dynamic_next_toggles(
         hass, "My Test", [{CONF_FROM: SUNRISE_SYMBOL, CONF_TO: "12:00:00"}]
     )
 
+    def sunrise(day: datetime.date) -> datetime.datetime:
+        event = sun.get_astral_event_date(hass, SUN_EVENT_SUNRISE, day)
+        assert event is not None
+        return dt_util.as_local(event).replace(microsecond=0)
+
     sunrises = [
-        dt_util.as_local(
-            sun.get_astral_event_date(hass, SUN_EVENT_SUNRISE, day)
-        ).replace(microsecond=0)
-        for day in (datetime.date(2026, 3, 11), datetime.date(2026, 3, 12))
+        sunrise(datetime.date(2026, 3, 11)),
+        sunrise(datetime.date(2026, 3, 12)),
     ]
     assert sunrises[0] != sunrises[1].replace(day=11)  # Sun times change daily.
     state = hass.states.get(f"{Platform.BINARY_SENSOR}.my_test")
