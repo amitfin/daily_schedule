@@ -44,17 +44,15 @@ People *love* thorough bug reports. I'm not even kidding.
 
 ## Use a Consistent Coding Style
 
-Use [ruff](https://github.com/astral-sh/ruff) to make sure the code follows the style.
+Run `scripts/lint` before opening a pull request. It formats and checks the Python code (ruff, `mypy --strict`) and the card's JavaScript (Biome). CI runs the same checks with `scripts/lint --no-fix`.
 
 ## Test your code modification
 
-This custom component is based on [integration_blueprint template](https://github.com/ludeeus/integration_blueprint).
+The repository includes a development container for Visual Studio Code, based on the [integration_blueprint template](https://github.com/ludeeus/integration_blueprint). `scripts/setup` (run automatically by the container) installs the dependencies, and `scripts/develop` starts a Home Assistant instance on port 8123, configured with [`configuration.yaml`](./config/configuration.yaml).
 
-It comes with development environment in a container, easy to launch
-if you use Visual Studio Code. With this container you will have a stand alone
-Home Assistant instance running and already configured with the included
-[`configuration.yaml`](./config/configuration.yaml)
-file.
+- **Python tests:** `pytest`. Coverage must stay at 100%. A test also fails if it logs a warning or an error; mark expected messages with `@pytest.mark.allowed_logs([...])`.
+- **Card tests:** `npm test`, also with 100% coverage.
+- CI also runs the Python tests on the minimum Home Assistant version from `hacs.json`.
 
 ## License
 
