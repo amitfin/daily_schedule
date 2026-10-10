@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Final
 
@@ -49,7 +49,7 @@ type DailyScheduleConfigEntry = ConfigEntry[DailyScheduleRuntimeData | None]
 PARALLEL_UPDATES = 1
 
 
-def remove_micros_and_tz(time: datetime.time) -> str:
+def remove_micros_and_tz(time: dt.time) -> str:
     """Remove microseconds and timezone from a time object."""
     return time.replace(microsecond=0, tzinfo=None).isoformat()
 
@@ -144,7 +144,7 @@ class DailyScheduleSensor(BinarySensorEntity):
         self._clean_up_listener()
         self._update_state()
 
-    def _now(self) -> datetime.datetime:
+    def _now(self) -> dt.datetime:
         """Return the current time either as local or UTC, based on configuration."""
         return dt_util.now() if not self._utc else dt_util.utcnow()
 
@@ -189,7 +189,7 @@ class DailyScheduleSensor(BinarySensorEntity):
         )
 
     @callback
-    def _update_state(self, _: datetime.datetime | None = None) -> None:
+    def _update_state(self, _: dt.datetime | None = None) -> None:
         """Update the state & attributes and schedule next update."""
         self._unsub_update = None
 
@@ -226,7 +226,7 @@ class DailyScheduleSensor(BinarySensorEntity):
 
         tomorrow = (
             dt_util.now().replace(hour=0, minute=0, second=0, microsecond=0)
-            + datetime.timedelta(days=1)
+            + dt.timedelta(days=1)
             if self._is_dynamic
             else None
         )

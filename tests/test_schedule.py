@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 from typing import TYPE_CHECKING, Any
 from unittest.mock import Mock, patch
 
@@ -49,16 +49,14 @@ def test_greater_operator(
 ) -> None:
     """Test comparison of TimeRange."""
     assert (
-        TimeRange(datetime.time.fromisoformat(from1), datetime.time.fromisoformat(to1))
-        > TimeRange(
-            datetime.time.fromisoformat(from2), datetime.time.fromisoformat(to2)
-        )
+        TimeRange(dt.time.fromisoformat(from1), dt.time.fromisoformat(to1))
+        > TimeRange(dt.time.fromisoformat(from2), dt.time.fromisoformat(to2))
     ) is result
 
 
 def test_different_object() -> None:
     """Test comparison of TimeRange with different object."""
-    midnight = datetime.time.fromisoformat("00:00")
+    midnight = dt.time.fromisoformat("00:00")
     assert TimeRange(midnight, midnight) != 1
     with pytest.raises(TypeError):
         assert TimeRange(midnight, midnight) > 1
@@ -67,40 +65,28 @@ def test_different_object() -> None:
 def test_sort() -> None:
     """Test sorting of TimeRange."""
     time_ranges = [
-        TimeRange(
-            datetime.time.fromisoformat("02:00"), datetime.time.fromisoformat("03:00")
-        ),
-        TimeRange(
-            datetime.time.fromisoformat("01:00"), datetime.time.fromisoformat("01:30")
-        ),
-        TimeRange(
-            datetime.time.fromisoformat("01:00"), datetime.time.fromisoformat("02:00")
-        ),
+        TimeRange(dt.time.fromisoformat("02:00"), dt.time.fromisoformat("03:00")),
+        TimeRange(dt.time.fromisoformat("01:00"), dt.time.fromisoformat("01:30")),
+        TimeRange(dt.time.fromisoformat("01:00"), dt.time.fromisoformat("02:00")),
     ]
     time_ranges.sort()
     assert time_ranges == [
-        TimeRange(
-            datetime.time.fromisoformat("01:00"), datetime.time.fromisoformat("01:30")
-        ),
-        TimeRange(
-            datetime.time.fromisoformat("01:00"), datetime.time.fromisoformat("02:00")
-        ),
-        TimeRange(
-            datetime.time.fromisoformat("02:00"), datetime.time.fromisoformat("03:00")
-        ),
+        TimeRange(dt.time.fromisoformat("01:00"), dt.time.fromisoformat("01:30")),
+        TimeRange(dt.time.fromisoformat("01:00"), dt.time.fromisoformat("02:00")),
+        TimeRange(dt.time.fromisoformat("02:00"), dt.time.fromisoformat("03:00")),
     ]
 
 
 def test_time_range_hash() -> None:
     """Test hashing function of time_range."""
     time_range1 = TimeRange(
-        datetime.time.fromisoformat("01:00"), datetime.time.fromisoformat("02:00")
+        dt.time.fromisoformat("01:00"), dt.time.fromisoformat("02:00")
     )
     time_range2 = TimeRange(
-        datetime.time.fromisoformat("01:00"), datetime.time.fromisoformat("02:01")
+        dt.time.fromisoformat("01:00"), dt.time.fromisoformat("02:01")
     )
     time_range3 = TimeRange(
-        datetime.time.fromisoformat("01:00"), datetime.time.fromisoformat("02:00")
+        dt.time.fromisoformat("01:00"), dt.time.fromisoformat("02:00")
     )
     assert hash(time_range1) == hash(time_range3)
     assert hash(time_range1) != hash(time_range2)
@@ -143,7 +129,7 @@ def test_time_range(  # noqa: PLR0913, PLR0917
             False,  # noqa: FBT003
             utc=False,
             date=dt_util.now().date(),
-        ).containing(datetime.time.fromisoformat(time))
+        ).containing(dt.time.fromisoformat(time))
         is result
     )
 
@@ -229,7 +215,7 @@ def test_sun_not_resolvable(_: Mock, hass: HomeAssistant) -> None:  # noqa: PT01
     assert schedule.unresolved() == [
         {CONF_FROM: SUNSET_SYMBOL, CONF_TO: SUNRISE_SYMBOL}
     ]
-    assert schedule.next_update(datetime.datetime(2026, 12, 20, tzinfo=TZ_IL)) is None
+    assert schedule.next_update(dt.datetime(2026, 12, 20, tzinfo=TZ_IL)) is None
 
 
 @pytest.mark.parametrize(
@@ -315,7 +301,7 @@ def test_schedule_containing(
     assert (
         Schedule(
             hass, schedule, skip_reversed, utc=False, date=dt_util.now().date()
-        ).containing(datetime.time.fromisoformat(time))
+        ).containing(dt.time.fromisoformat(time))
         is result
     )
 
@@ -433,9 +419,9 @@ def test_complex_schedule(
     """Test complex schedule."""
     test = Schedule(hass, schedule, skip_reversed, utc=False, date=dt_util.now().date())
     if on is not None:
-        assert test.containing(datetime.time.fromisoformat(on)) is True
+        assert test.containing(dt.time.fromisoformat(on)) is True
     if off is not None:
-        assert test.containing(datetime.time.fromisoformat(off)) is False
+        assert test.containing(dt.time.fromisoformat(off)) is False
 
 
 @pytest.mark.parametrize(
@@ -559,7 +545,7 @@ def test_dynamic(
     ("schedule", "next_update_sec_offset"),
     [
         ([(-5, 5, False)], 5),
-        ([(-10, -5, False)], datetime.timedelta(days=1).total_seconds() - 10),
+        ([(-10, -5, False)], dt.timedelta(days=1).total_seconds() - 10),
         ([(5, 10, False)], 5),
         ([(0, 0, False)], None),
         ([(100, 200, False), (200, 100, False)], None),
@@ -586,17 +572,15 @@ def test_next_update(
     next_update_sec_offset: int | None,
 ) -> None:
     """Test next update logic."""
-    now = datetime.datetime.fromisoformat("2000-01-01").replace(tzinfo=TZ_IL)
+    now = dt.datetime.fromisoformat("2000-01-01").replace(tzinfo=TZ_IL)
     assert Schedule(
         hass,
         [
             {
-                CONF_FROM: (now + datetime.timedelta(seconds=from_sec_offset))
+                CONF_FROM: (now + dt.timedelta(seconds=from_sec_offset))
                 .time()
                 .isoformat(),
-                CONF_TO: (now + datetime.timedelta(seconds=to_sec_offset))
-                .time()
-                .isoformat(),
+                CONF_TO: (now + dt.timedelta(seconds=to_sec_offset)).time().isoformat(),
                 CONF_DISABLED: disabled,
             }
             for (from_sec_offset, to_sec_offset, disabled) in schedule
@@ -605,7 +589,7 @@ def test_next_update(
         utc=False,
         date=dt_util.now().date(),
     ).next_update(now) == (
-        now + datetime.timedelta(seconds=next_update_sec_offset)
+        now + dt.timedelta(seconds=next_update_sec_offset)
         if next_update_sec_offset is not None
         else None
     )
@@ -625,13 +609,13 @@ def test_next_update(
                     CONF_TO: "02:45:00",
                 },
             ],
-            datetime.datetime(2024, 10, 27, 0, 30, tzinfo=TZ_IL),
+            dt.datetime(2024, 10, 27, 0, 30, tzinfo=TZ_IL),
             [
-                datetime.datetime(2024, 10, 27, 1, 15, tzinfo=TZ_IL, fold=0),
-                datetime.datetime(2024, 10, 27, 1, 45, tzinfo=TZ_IL, fold=0),
-                datetime.datetime(2024, 10, 27, 1, 15, tzinfo=TZ_IL, fold=1),
-                datetime.datetime(2024, 10, 27, 1, 45, tzinfo=TZ_IL, fold=1),
-                datetime.datetime(2024, 10, 27, 2, 15, tzinfo=TZ_IL, fold=0),
+                dt.datetime(2024, 10, 27, 1, 15, tzinfo=TZ_IL, fold=0),
+                dt.datetime(2024, 10, 27, 1, 45, tzinfo=TZ_IL, fold=0),
+                dt.datetime(2024, 10, 27, 1, 15, tzinfo=TZ_IL, fold=1),
+                dt.datetime(2024, 10, 27, 1, 45, tzinfo=TZ_IL, fold=1),
+                dt.datetime(2024, 10, 27, 2, 15, tzinfo=TZ_IL, fold=0),
             ],
         ),
         (
@@ -641,12 +625,12 @@ def test_next_update(
                     CONF_TO: "01:30",
                 },
             ],
-            datetime.datetime(2024, 10, 27, 0, 0, tzinfo=TZ_IL),
+            dt.datetime(2024, 10, 27, 0, 0, tzinfo=TZ_IL),
             [
-                datetime.datetime(2024, 10, 27, 0, 30, tzinfo=TZ_IL, fold=0),
-                datetime.datetime(2024, 10, 27, 1, 30, tzinfo=TZ_IL, fold=0),
-                datetime.datetime(2024, 10, 27, 1, 00, tzinfo=TZ_IL, fold=1),
-                datetime.datetime(2024, 10, 27, 1, 30, tzinfo=TZ_IL, fold=1),
+                dt.datetime(2024, 10, 27, 0, 30, tzinfo=TZ_IL, fold=0),
+                dt.datetime(2024, 10, 27, 1, 30, tzinfo=TZ_IL, fold=0),
+                dt.datetime(2024, 10, 27, 1, 00, tzinfo=TZ_IL, fold=1),
+                dt.datetime(2024, 10, 27, 1, 30, tzinfo=TZ_IL, fold=1),
             ],
         ),
         (
@@ -656,10 +640,10 @@ def test_next_update(
                     CONF_TO: "02:15:00",
                 },
             ],
-            datetime.datetime(2024, 10, 27, 0, 30, tzinfo=TZ_IL),
+            dt.datetime(2024, 10, 27, 0, 30, tzinfo=TZ_IL),
             [
-                datetime.datetime(2024, 10, 27, 0, 45, tzinfo=TZ_IL, fold=0),
-                datetime.datetime(2024, 10, 27, 2, 15, tzinfo=TZ_IL, fold=0),
+                dt.datetime(2024, 10, 27, 0, 45, tzinfo=TZ_IL, fold=0),
+                dt.datetime(2024, 10, 27, 2, 15, tzinfo=TZ_IL, fold=0),
             ],
         ),
         (
@@ -669,12 +653,12 @@ def test_next_update(
                     CONF_TO: "01:15:00",
                 },
             ],
-            datetime.datetime(2024, 10, 27, 0, 30, tzinfo=TZ_IL),
+            dt.datetime(2024, 10, 27, 0, 30, tzinfo=TZ_IL),
             [
-                datetime.datetime(2024, 10, 27, 0, 45, tzinfo=TZ_IL, fold=0),
-                datetime.datetime(2024, 10, 27, 1, 15, tzinfo=TZ_IL, fold=0),
-                datetime.datetime(2024, 10, 27, 1, 0, tzinfo=TZ_IL, fold=1),
-                datetime.datetime(2024, 10, 27, 1, 15, tzinfo=TZ_IL, fold=1),
+                dt.datetime(2024, 10, 27, 0, 45, tzinfo=TZ_IL, fold=0),
+                dt.datetime(2024, 10, 27, 1, 15, tzinfo=TZ_IL, fold=0),
+                dt.datetime(2024, 10, 27, 1, 0, tzinfo=TZ_IL, fold=1),
+                dt.datetime(2024, 10, 27, 1, 15, tzinfo=TZ_IL, fold=1),
             ],
         ),
         (
@@ -684,12 +668,12 @@ def test_next_update(
                     CONF_TO: "02:15:00",
                 },
             ],
-            datetime.datetime(2024, 10, 27, 0, 30, tzinfo=TZ_IL),
+            dt.datetime(2024, 10, 27, 0, 30, tzinfo=TZ_IL),
             [
-                datetime.datetime(2024, 10, 27, 1, 45, tzinfo=TZ_IL, fold=0),
-                datetime.datetime(2024, 10, 27, 1, 00, tzinfo=TZ_IL, fold=1),
-                datetime.datetime(2024, 10, 27, 1, 45, tzinfo=TZ_IL, fold=1),
-                datetime.datetime(2024, 10, 27, 2, 15, tzinfo=TZ_IL, fold=0),
+                dt.datetime(2024, 10, 27, 1, 45, tzinfo=TZ_IL, fold=0),
+                dt.datetime(2024, 10, 27, 1, 00, tzinfo=TZ_IL, fold=1),
+                dt.datetime(2024, 10, 27, 1, 45, tzinfo=TZ_IL, fold=1),
+                dt.datetime(2024, 10, 27, 2, 15, tzinfo=TZ_IL, fold=0),
             ],
         ),
         (
@@ -699,9 +683,9 @@ def test_next_update(
                     CONF_TO: "01:45:00",
                 },
             ],
-            datetime.datetime(2024, 10, 27, 1, 30, tzinfo=TZ_IL, fold=1),
+            dt.datetime(2024, 10, 27, 1, 30, tzinfo=TZ_IL, fold=1),
             [
-                datetime.datetime(2024, 10, 27, 1, 45, tzinfo=TZ_IL, fold=1),
+                dt.datetime(2024, 10, 27, 1, 45, tzinfo=TZ_IL, fold=1),
             ],
         ),
         (
@@ -711,10 +695,10 @@ def test_next_update(
                     CONF_TO: "03:30:00",
                 },
             ],
-            datetime.datetime(2025, 3, 28, 1, 30, tzinfo=TZ_IL),
+            dt.datetime(2025, 3, 28, 1, 30, tzinfo=TZ_IL),
             [
-                datetime.datetime(2025, 3, 28, 3, 0, tzinfo=TZ_IL),
-                datetime.datetime(2025, 3, 28, 3, 30, tzinfo=TZ_IL),
+                dt.datetime(2025, 3, 28, 3, 0, tzinfo=TZ_IL),
+                dt.datetime(2025, 3, 28, 3, 30, tzinfo=TZ_IL),
             ],
         ),
         (
@@ -724,10 +708,10 @@ def test_next_update(
                     CONF_TO: "03:30:00",
                 },
             ],
-            datetime.datetime(2025, 3, 28, 1, 0, tzinfo=TZ_IL),
+            dt.datetime(2025, 3, 28, 1, 0, tzinfo=TZ_IL),
             [
-                datetime.datetime(2025, 3, 28, 1, 30, tzinfo=TZ_IL),
-                datetime.datetime(2025, 3, 28, 3, 30, tzinfo=TZ_IL),
+                dt.datetime(2025, 3, 28, 1, 30, tzinfo=TZ_IL),
+                dt.datetime(2025, 3, 28, 3, 30, tzinfo=TZ_IL),
             ],
         ),
         (
@@ -737,9 +721,9 @@ def test_next_update(
                     CONF_TO: "03:30:00",
                 },
             ],
-            datetime.datetime(2025, 3, 28, 1, 30, tzinfo=TZ_IL),
+            dt.datetime(2025, 3, 28, 1, 30, tzinfo=TZ_IL),
             [
-                datetime.datetime(2025, 3, 28, 3, 0, tzinfo=TZ_IL),
+                dt.datetime(2025, 3, 28, 3, 0, tzinfo=TZ_IL),
             ],
         ),
         (
@@ -749,9 +733,9 @@ def test_next_update(
                     CONF_TO: "01:30:00",
                 },
             ],
-            datetime.datetime(2024, 10, 27, 1, 0, tzinfo=TZ_IL, fold=1),
+            dt.datetime(2024, 10, 27, 1, 0, tzinfo=TZ_IL, fold=1),
             [
-                datetime.datetime(2024, 10, 27, 1, 30, tzinfo=TZ_IL, fold=1),
+                dt.datetime(2024, 10, 27, 1, 30, tzinfo=TZ_IL, fold=1),
             ],
         ),
         (
@@ -765,13 +749,13 @@ def test_next_update(
                     CONF_TO: "02:45:00",
                 },
             ],
-            datetime.datetime(2024, 10, 27, 0, 30, tzinfo=TZ_IL),
+            dt.datetime(2024, 10, 27, 0, 30, tzinfo=TZ_IL),
             [
-                datetime.datetime(2024, 10, 27, 1, 15, 30, tzinfo=TZ_IL, fold=0),
-                datetime.datetime(2024, 10, 27, 1, 45, 30, tzinfo=TZ_IL, fold=0),
-                datetime.datetime(2024, 10, 27, 1, 15, 30, tzinfo=TZ_IL, fold=1),
-                datetime.datetime(2024, 10, 27, 1, 45, 30, tzinfo=TZ_IL, fold=1),
-                datetime.datetime(2024, 10, 27, 2, 15, tzinfo=TZ_IL, fold=0),
+                dt.datetime(2024, 10, 27, 1, 15, 30, tzinfo=TZ_IL, fold=0),
+                dt.datetime(2024, 10, 27, 1, 45, 30, tzinfo=TZ_IL, fold=0),
+                dt.datetime(2024, 10, 27, 1, 15, 30, tzinfo=TZ_IL, fold=1),
+                dt.datetime(2024, 10, 27, 1, 45, 30, tzinfo=TZ_IL, fold=1),
+                dt.datetime(2024, 10, 27, 2, 15, tzinfo=TZ_IL, fold=0),
             ],
         ),
         (
@@ -781,10 +765,10 @@ def test_next_update(
                     CONF_TO: "01:30:00",
                 },
             ],
-            datetime.datetime(2024, 10, 26, 23, 0, tzinfo=TZ_IL),
+            dt.datetime(2024, 10, 26, 23, 0, tzinfo=TZ_IL),
             [
-                datetime.datetime(2024, 10, 26, 23, 30, tzinfo=TZ_IL),
-                datetime.datetime(2024, 10, 27, 1, 30, tzinfo=TZ_IL, fold=0),
+                dt.datetime(2024, 10, 26, 23, 30, tzinfo=TZ_IL),
+                dt.datetime(2024, 10, 27, 1, 30, tzinfo=TZ_IL, fold=0),
             ],
         ),
         (
@@ -798,12 +782,12 @@ def test_next_update(
                     CONF_TO: "03:20:00",
                 },
             ],
-            datetime.datetime(2025, 3, 28, 0, 0, tzinfo=TZ_IL),
+            dt.datetime(2025, 3, 28, 0, 0, tzinfo=TZ_IL),
             [
-                datetime.datetime(2025, 3, 28, 0, 30, tzinfo=TZ_IL),
-                datetime.datetime(2025, 3, 28, 1, 0, tzinfo=TZ_IL),
-                datetime.datetime(2025, 3, 28, 3, 10, tzinfo=TZ_IL),
-                datetime.datetime(2025, 3, 28, 3, 20, tzinfo=TZ_IL),
+                dt.datetime(2025, 3, 28, 0, 30, tzinfo=TZ_IL),
+                dt.datetime(2025, 3, 28, 1, 0, tzinfo=TZ_IL),
+                dt.datetime(2025, 3, 28, 3, 10, tzinfo=TZ_IL),
+                dt.datetime(2025, 3, 28, 3, 20, tzinfo=TZ_IL),
             ],
         ),
         (
@@ -813,10 +797,10 @@ def test_next_update(
                     CONF_TO: "03:00:00",
                 },
             ],
-            datetime.datetime(2025, 3, 28, 0, 48, tzinfo=TZ_IL),
+            dt.datetime(2025, 3, 28, 0, 48, tzinfo=TZ_IL),
             [
-                datetime.datetime(2025, 3, 29, 2, 45, tzinfo=TZ_IL),
-                datetime.datetime(2025, 3, 29, 3, 0, tzinfo=TZ_IL),
+                dt.datetime(2025, 3, 29, 2, 45, tzinfo=TZ_IL),
+                dt.datetime(2025, 3, 29, 3, 0, tzinfo=TZ_IL),
             ],
         ),
         (
@@ -830,12 +814,12 @@ def test_next_update(
                     CONF_TO: "09:45:00",
                 },
             ],
-            datetime.datetime(2025, 3, 28, 1, 0, tzinfo=TZ_IL),
+            dt.datetime(2025, 3, 28, 1, 0, tzinfo=TZ_IL),
             [
-                datetime.datetime(2025, 3, 28, 9, 45, tzinfo=TZ_IL),
-                datetime.datetime(2025, 3, 28, 10, 30, tzinfo=TZ_IL),
-                datetime.datetime(2025, 3, 29, 2, 0, tzinfo=TZ_IL),
-                datetime.datetime(2025, 3, 29, 2, 15, tzinfo=TZ_IL),
+                dt.datetime(2025, 3, 28, 9, 45, tzinfo=TZ_IL),
+                dt.datetime(2025, 3, 28, 10, 30, tzinfo=TZ_IL),
+                dt.datetime(2025, 3, 29, 2, 0, tzinfo=TZ_IL),
+                dt.datetime(2025, 3, 29, 2, 15, tzinfo=TZ_IL),
             ],
         ),
     ],
@@ -860,8 +844,8 @@ def test_next_update(
 def test_next_update_dst(
     hass: HomeAssistant,
     schedule: list[Any],
-    now: datetime.datetime,
-    updates: list[datetime.datetime],
+    now: dt.datetime,
+    updates: list[dt.datetime],
 ) -> None:
     """Test next update during DST transitions."""
     assert (
@@ -876,7 +860,7 @@ def test_next_updates(
     hass: HomeAssistant,
 ) -> None:
     """Test next updates."""
-    now = datetime.datetime.fromisoformat("2000-01-01").replace(tzinfo=TZ_IL)
+    now = dt.datetime.fromisoformat("2000-01-01").replace(tzinfo=TZ_IL)
     assert Schedule(
         hass,
         [
@@ -893,11 +877,11 @@ def test_next_updates(
         utc=False,
         date=dt_util.now().date(),
     ).next_updates(now, 5) == [
-        now + datetime.timedelta(hours=1),
-        now + datetime.timedelta(hours=2),
-        now + datetime.timedelta(hours=3),
-        now + datetime.timedelta(hours=4),
-        now + datetime.timedelta(days=1, hours=1),
+        now + dt.timedelta(hours=1),
+        now + dt.timedelta(hours=2),
+        now + dt.timedelta(hours=3),
+        now + dt.timedelta(hours=4),
+        now + dt.timedelta(days=1, hours=1),
     ]
 
 
@@ -905,7 +889,7 @@ def test_sort_off_timestamps(
     hass: HomeAssistant,
 ) -> None:
     """Test off calculation correctness when off timestamps requires sorting."""
-    now = datetime.datetime.fromisoformat("2000-01-01 22:00").replace(tzinfo=TZ_IL)
+    now = dt.datetime.fromisoformat("2000-01-01 22:00").replace(tzinfo=TZ_IL)
     assert Schedule(
         hass,
         [
@@ -921,17 +905,17 @@ def test_sort_off_timestamps(
         skip_reversed=False,
         utc=False,
         date=dt_util.now().date(),
-    ).next_update(now) == now + datetime.timedelta(hours=13)
+    ).next_update(now) == now + dt.timedelta(hours=13)
 
 
 @patch("homeassistant.helpers.sun.get_astral_event_date")
 def test_next_updates_dynamic_midnight(mock_sun: Mock, hass: HomeAssistant) -> None:
     """Test a toggle at midnight when the next day's sun times change the state."""
-    today = datetime.date(2026, 6, 1)
+    today = dt.date(2026, 6, 1)
     # Sunset moves 20 seconds later every day.
     mock_sun.side_effect = lambda _hass, _event, date: (
-        datetime.datetime.combine(date, datetime.time(19, 59, 50), tzinfo=TZ_IL)
-        + datetime.timedelta(seconds=20 * (date - today).days)
+        dt.datetime.combine(date, dt.time(19, 59, 50), tzinfo=TZ_IL)
+        + dt.timedelta(seconds=20 * (date - today).days)
     )
 
     # Today 23:59:50 -> 01:00 (crosses midnight), tomorrow 00:00:10 -> 01:00.
@@ -942,13 +926,11 @@ def test_next_updates_dynamic_midnight(mock_sun: Mock, hass: HomeAssistant) -> N
         utc=False,
         date=today,
     )
-    assert schedule.next_updates(
-        datetime.datetime(2026, 6, 1, 23, 0, tzinfo=TZ_IL), 4
-    ) == [
-        datetime.datetime(2026, 6, 1, 23, 59, 50, tzinfo=TZ_IL),
-        datetime.datetime(2026, 6, 2, 0, 0, tzinfo=TZ_IL),
-        datetime.datetime(2026, 6, 2, 0, 0, 10, tzinfo=TZ_IL),
-        datetime.datetime(2026, 6, 2, 1, 0, tzinfo=TZ_IL),
+    assert schedule.next_updates(dt.datetime(2026, 6, 1, 23, 0, tzinfo=TZ_IL), 4) == [
+        dt.datetime(2026, 6, 1, 23, 59, 50, tzinfo=TZ_IL),
+        dt.datetime(2026, 6, 2, 0, 0, tzinfo=TZ_IL),
+        dt.datetime(2026, 6, 2, 0, 0, 10, tzinfo=TZ_IL),
+        dt.datetime(2026, 6, 2, 1, 0, tzinfo=TZ_IL),
     ]
 
 
@@ -963,16 +945,14 @@ async def test_next_updates_dynamic_dst_at_midnight(hass: HomeAssistant) -> None
         [{CONF_FROM: "↑-431", CONF_TO: "05:30"}],
         skip_reversed=False,
         utc=False,
-        date=datetime.date(2026, 9, 5),
+        date=dt.date(2026, 9, 5),
     )
     # On 2026-09-06 the clock jumps from 00:00 to 01:00.
-    assert schedule.next_updates(
-        datetime.datetime(2026, 9, 5, 0, 43, tzinfo=tz), 4
-    ) == [
-        datetime.datetime(2026, 9, 5, 5, 30, tzinfo=tz),
-        datetime.datetime(2026, 9, 5, 23, 44, 25, tzinfo=tz),
-        datetime.datetime(2026, 9, 6, 5, 30, tzinfo=tz),
-        datetime.datetime(2026, 9, 6, 23, 43, 5, tzinfo=tz),  # Wraps (see README).
+    assert schedule.next_updates(dt.datetime(2026, 9, 5, 0, 43, tzinfo=tz), 4) == [
+        dt.datetime(2026, 9, 5, 5, 30, tzinfo=tz),
+        dt.datetime(2026, 9, 5, 23, 44, 25, tzinfo=tz),
+        dt.datetime(2026, 9, 6, 5, 30, tzinfo=tz),
+        dt.datetime(2026, 9, 6, 23, 43, 5, tzinfo=tz),  # Wraps (see README).
     ]
 
     # The midnight check must use 01:00, the first real time of 2026-09-06.
@@ -981,28 +961,26 @@ async def test_next_updates_dynamic_dst_at_midnight(hass: HomeAssistant) -> None
         [{CONF_FROM: "05:15", CONF_TO: "↓+327"}],
         skip_reversed=False,
         utc=False,
-        date=datetime.date(2026, 9, 5),
+        date=dt.date(2026, 9, 5),
     )
-    assert schedule.next_updates(
-        datetime.datetime(2026, 9, 5, 18, 55, tzinfo=tz), 4
-    ) == [
-        datetime.datetime(2026, 9, 5, 23, 54, 42, tzinfo=tz),
-        datetime.datetime(2026, 9, 6, 5, 15, tzinfo=tz),
-        datetime.datetime(2026, 9, 7, 0, 56, 1, tzinfo=tz),
-        datetime.datetime(2026, 9, 7, 5, 15, tzinfo=tz),
+    assert schedule.next_updates(dt.datetime(2026, 9, 5, 18, 55, tzinfo=tz), 4) == [
+        dt.datetime(2026, 9, 5, 23, 54, 42, tzinfo=tz),
+        dt.datetime(2026, 9, 6, 5, 15, tzinfo=tz),
+        dt.datetime(2026, 9, 7, 0, 56, 1, tzinfo=tz),
+        dt.datetime(2026, 9, 7, 5, 15, tzinfo=tz),
     ]
 
 
 @pytest.mark.parametrize(
     ("day", "minutes", "expected"),
     [
-        (datetime.date(2026, 3, 29), -300, "00:52:03"),
-        (datetime.date(2026, 10, 25), -420, "01:21:10"),
+        (dt.date(2026, 3, 29), -300, "00:52:03"),
+        (dt.date(2026, 10, 25), -420, "01:21:10"),
     ],
     ids=["spring forward", "fall back"],
 )
 async def test_offset_elapsed_across_dst(
-    hass: HomeAssistant, day: datetime.date, minutes: int, expected: str
+    hass: HomeAssistant, day: dt.date, minutes: int, expected: str
 ) -> None:
     """Test offsets are real minutes from the sun event, also across a DST change."""
     hass.config.latitude = 59.91
@@ -1014,7 +992,7 @@ async def test_offset_elapsed_across_dst(
         hass, f"↑{minutes}", "12:00", disabled=False, utc=False, date=day
     )
     assert config.time_range is not None
-    assert config.time_range.from_ == datetime.time.fromisoformat(expected)
+    assert config.time_range.from_ == dt.time.fromisoformat(expected)
 
 
 async def test_offset_into_repeated_hour(hass: HomeAssistant) -> None:
@@ -1029,23 +1007,21 @@ async def test_offset_into_repeated_hour(hass: HomeAssistant) -> None:
         [{CONF_FROM: "20:00", CONF_TO: "↑-273"}],
         skip_reversed=False,
         utc=False,
-        date=datetime.date(2026, 10, 24),
+        date=dt.date(2026, 10, 24),
     )
-    updates = schedule.next_updates(
-        datetime.datetime(2026, 10, 24, 15, 10, tzinfo=tz), 4
-    )
+    updates = schedule.next_updates(dt.datetime(2026, 10, 24, 15, 10, tzinfo=tz), 4)
     # Compare timestamps: datetimes with the same tzinfo compare ignoring fold.
     assert [update.timestamp() for update in updates] == [
-        datetime.datetime(2026, 10, 24, 20, 0, tzinfo=tz).timestamp(),
-        datetime.datetime(2026, 10, 25, 2, 48, 10, tzinfo=tz, fold=0).timestamp(),
-        datetime.datetime(2026, 10, 25, 2, 0, tzinfo=tz, fold=1).timestamp(),
-        datetime.datetime(2026, 10, 25, 2, 48, 10, tzinfo=tz, fold=1).timestamp(),
+        dt.datetime(2026, 10, 24, 20, 0, tzinfo=tz).timestamp(),
+        dt.datetime(2026, 10, 25, 2, 48, 10, tzinfo=tz, fold=0).timestamp(),
+        dt.datetime(2026, 10, 25, 2, 0, tzinfo=tz, fold=1).timestamp(),
+        dt.datetime(2026, 10, 25, 2, 48, 10, tzinfo=tz, fold=1).timestamp(),
     ]
 
 
 def test_next_update_naive(hass: HomeAssistant) -> None:
     """Test a naive datetime is supported, without DST handling."""
-    now = datetime.datetime(2000, 1, 1)  # noqa: DTZ001
+    now = dt.datetime(2000, 1, 1)  # noqa: DTZ001
     schedule = Schedule(
         hass,
         [{CONF_FROM: "01:00", CONF_TO: "02:00"}],
@@ -1054,6 +1030,6 @@ def test_next_update_naive(hass: HomeAssistant) -> None:
         date=now.date(),
     )
     update = schedule.next_update(now)
-    assert update == datetime.datetime(2000, 1, 1, 1, 0)  # noqa: DTZ001
+    assert update == dt.datetime(2000, 1, 1, 1, 0)  # noqa: DTZ001
     assert update is not None
     assert update.tzinfo is None

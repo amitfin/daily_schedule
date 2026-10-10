@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 from typing import TYPE_CHECKING
 from unittest.mock import Mock, patch
 
@@ -65,9 +65,9 @@ async def test_async_get_conditions(hass: HomeAssistant) -> None:
 @patch("homeassistant.util.dt.now")
 async def test_is_on_and_is_off(mock_now: Mock, hass: HomeAssistant) -> None:
     """Test the conditions match the schedule's on/off state."""
-    mock_now.return_value = datetime.datetime.fromisoformat(
-        "2000-01-01 23:50:00"
-    ).replace(tzinfo=TIME_ZONE)
+    mock_now.return_value = dt.datetime.fromisoformat("2000-01-01 23:50:00").replace(
+        tzinfo=TIME_ZONE
+    )
     await setup_entity(hass, [{CONF_FROM: "23:50:00", CONF_TO: "23:55:00"}])
 
     is_on_calls, is_off_calls = await setup_condition_automations(hass)
@@ -77,7 +77,7 @@ async def test_is_on_and_is_off(mock_now: Mock, hass: HomeAssistant) -> None:
     assert len(is_on_calls) == 1
     assert len(is_off_calls) == 0
 
-    mock_now.return_value += datetime.timedelta(minutes=5)
+    mock_now.return_value += dt.timedelta(minutes=5)
     async_fire_time_changed(hass, mock_now.return_value)
     await hass.async_block_till_done()
 

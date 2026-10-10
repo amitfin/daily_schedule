@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.const import (
@@ -17,18 +17,18 @@ from .const import CONF_DISABLED, CONF_FROM, CONF_TO, SUNRISE_SYMBOL, SUNSET_SYM
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
-MIDNIGHT = datetime.time()
-MINUTE = datetime.timedelta(minutes=1)
+MIDNIGHT = dt.time()
+MINUTE = dt.timedelta(minutes=1)
 
 
 class TimeRange:
     """Time range."""
 
-    def __init__(self, from_: datetime.time, to: datetime.time) -> None:
+    def __init__(self, from_: dt.time, to: dt.time) -> None:
         """Initialize the object."""
-        self.from_: datetime.time = from_
+        self.from_: dt.time = from_
         self._from_offset = from_.hour * 3600 + from_.minute * 60 + from_.second
-        self.to: datetime.time = to
+        self.to: dt.time = to
         self._to_offset = to.hour * 3600 + to.minute * 60 + to.second
         self.reversed = self.to <= self.from_
         self.seconds = (
@@ -55,7 +55,7 @@ class TimeRange:
         """Return a number unique to this range."""
         return hash((self._from_offset, self._to_offset))
 
-    def containing(self, time: datetime.time) -> bool:
+    def containing(self, time: dt.time) -> bool:
         """Check if the time is inside the range."""
         if self.reversed:
             return self.from_ <= time or time < self.to
@@ -80,7 +80,7 @@ class TimeRangeConfig:
         to: str,
         disabled: bool,  # noqa: FBT001
         utc: bool,  # noqa: FBT001
-        date: datetime.date,
+        date: dt.date,
     ) -> None:
         """Initialize the object for the given (local) date."""
         self._from, from_time = self.resolve_time(hass, from_, utc, date)
@@ -100,11 +100,11 @@ class TimeRangeConfig:
         hass: HomeAssistant,
         value: str,
         utc: bool,  # noqa: FBT001
-        date: datetime.date,
-    ) -> tuple[str, datetime.time | None]:
+        date: dt.date,
+    ) -> tuple[str, dt.time | None]:
         """Normalize the value and resolve it (None if no sunrise or sunset)."""
         if not value.startswith((SUNRISE_SYMBOL, SUNSET_SYMBOL)):
-            absolute = datetime.time.fromisoformat(value)
+            absolute = dt.time.fromisoformat(value)
             return absolute.isoformat(), absolute
 
         offset = int(value[1:]) if len(value) > 1 else 0
@@ -122,9 +122,7 @@ class TimeRangeConfig:
             # The offset is in real minutes (like HA's sun trigger), also across DST.
             # Only the wall-clock time of day is kept, like any other time.
             time = (
-                (as_utc if utc else as_local)(
-                    event + datetime.timedelta(minutes=offset)
-                )
+                (as_utc if utc else as_local)(event + dt.timedelta(minutes=offset))
                 .time()
                 .replace(microsecond=0, tzinfo=None, fold=0)
             )
@@ -153,7 +151,7 @@ class Schedule:
         schedule: list[dict[str, Any]],
         skip_reversed: bool,  # noqa: FBT001
         utc: bool,  # noqa: FBT001
-        date: datetime.date,
+        date: dt.date,
     ) -> None:
         """Create the schedule for the given (local) date."""
         self._hass = hass
@@ -254,7 +252,7 @@ class Schedule:
         """Check if the schedule contains at least one dynamic time."""
         return any(time_range_config.is_dynamic() for time_range_config in self._config)
 
-    def containing(self, time: datetime.time) -> bool:
+    def containing(self, time: dt.time) -> bool:
         """Check if the time is inside the range."""
         return any(time_range.containing(time) for time_range in self._schedule)
 
@@ -274,13 +272,13 @@ class Schedule:
         """Serialize schedule as a list using absolute time (without sunrise/sunset)."""
         return [time_range.to_dict() for time_range in self._schedule]
 
-    def _for_date(self, date: datetime.date) -> Schedule:
+    def _for_date(self, date: dt.date) -> Schedule:
         """Return the schedule resolved for the given (local) date."""
         if date == self._date:
             return self
         return Schedule(self._hass, self._input, self._skip_reversed, self._utc, date)
 
-    def next_update(self, date: datetime.datetime) -> datetime.datetime | None:
+    def next_update(self, date: dt.datetime) -> dt.datetime | None:
         """Calculate the next date and time when the state is going to change."""
         if not self.is_dynamic():
             return self._next_static_update(date)
@@ -293,12 +291,12 @@ class Schedule:
             local = as_local(date)
             # Through UTC, so a non-existent midnight (DST at 00:00) becomes 01:00.
             next_midnight = (
-                datetime.datetime.combine(
-                    local.date() + datetime.timedelta(days=1),
+                dt.datetime.combine(
+                    local.date() + dt.timedelta(days=1),
                     MIDNIGHT,
                     tzinfo=local.tzinfo,
                 )
-                .astimezone(datetime.UTC)
+                .astimezone(dt.UTC)
                 .astimezone(date.tzinfo)
             )
             # Same class, so accessing its private method is fine.
@@ -311,7 +309,7 @@ class Schedule:
             date = next_midnight
         return None
 
-    def _next_static_update(self, date: datetime.datetime) -> datetime.datetime | None:
+    def _next_static_update(self, date: dt.datetime) -> dt.datetime | None:
         """Calculate the next update, assuming the sun times don't change."""
         if not self._schedule:
             return None
@@ -328,33 +326,31 @@ class Schedule:
         # Find the smallest timestamp which is bigger than time.
         for current in timestamps:
             if prev <= time < current:
-                result = datetime.datetime.combine(today, current, tzinfo=date.tzinfo)
+                result = dt.datetime.combine(today, current, tzinfo=date.tzinfo)
                 break
             prev = current
 
         # Time is bigger than all timestamps. Use tomorrow's 1st timestamp.
         else:
-            result = datetime.datetime.combine(
-                today + datetime.timedelta(days=1),
+            result = dt.datetime.combine(
+                today + dt.timedelta(days=1),
                 timestamps[0],
                 tzinfo=date.tzinfo,
             )
 
         return self._handle_dst(date, result)
 
-    def _handle_dst(
-        self, date: datetime.datetime, result: datetime.datetime
-    ) -> datetime.datetime:
+    def _handle_dst(self, date: dt.datetime, result: dt.datetime) -> dt.datetime:
         """Handle DST transitions."""
         if result.tzinfo is None:
             return result
 
         # Handle non-existent (imaginary) time due to forward jump, e.g. 2am => 3am.
         # We check if the time exists by converting it to UTC and back.
-        if result != result.astimezone(datetime.UTC).astimezone(result.tzinfo):
+        if result != result.astimezone(dt.UTC).astimezone(result.tzinfo):
             # Find the next valid minute (DST uses minute bounds).
             result = result.replace(second=0, microsecond=0)
-            while result != result.astimezone(datetime.UTC).astimezone(result.tzinfo):
+            while result != result.astimezone(dt.UTC).astimezone(result.tzinfo):
                 result += MINUTE
             # Not a toggle if the state is the same on both sides of the gap.
             if self.containing(result.time()) == self.containing(date.time()):
@@ -386,8 +382,8 @@ class Schedule:
         return result
 
     def _fold1_start(
-        self, date: datetime.datetime, upper_bound: datetime.datetime
-    ) -> datetime.datetime | None:
+        self, date: dt.datetime, upper_bound: dt.datetime
+    ) -> dt.datetime | None:
         """Get the beginning of "fold=1" time range for the given date."""
         # Get the transition from "fold=0" to "fold=1".
         transition = date.replace(second=0, microsecond=0)
@@ -404,11 +400,9 @@ class Schedule:
         # Return the "fold=1" start.
         return (transition + new_offset - old_offset).replace(fold=1)
 
-    def next_updates(
-        self, date: datetime.datetime, count: int
-    ) -> list[datetime.datetime]:
+    def next_updates(self, date: dt.datetime, count: int) -> list[dt.datetime]:
         """Get list of future updates."""
-        updates: list[datetime.datetime] = []
+        updates: list[dt.datetime] = []
         update = self.next_update(date)
         while len(updates) < count and update is not None:
             updates.append(update)

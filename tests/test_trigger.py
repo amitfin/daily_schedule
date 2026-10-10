@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 from typing import TYPE_CHECKING
 from unittest.mock import Mock, patch
 
@@ -30,9 +30,9 @@ async def test_async_get_triggers(hass: HomeAssistant) -> None:
 @patch("homeassistant.util.dt.now")
 async def test_turned_on_and_off(mock_now: Mock, hass: HomeAssistant) -> None:
     """Test the triggers fire when a daily schedule turns on and off."""
-    mock_now.return_value = datetime.datetime.fromisoformat(
-        "2000-01-01 23:50:00"
-    ).replace(tzinfo=TIME_ZONE)
+    mock_now.return_value = dt.datetime.fromisoformat("2000-01-01 23:50:00").replace(
+        tzinfo=TIME_ZONE
+    )
     await setup_entity(
         hass,
         [
@@ -74,7 +74,7 @@ async def test_turned_on_and_off(mock_now: Mock, hass: HomeAssistant) -> None:
 
     # 23:50 (on) -> 23:55 (off) -> 00:00 (on) -> 00:05 (off)
     for _ in range(3):
-        mock_now.return_value += datetime.timedelta(minutes=5)
+        mock_now.return_value += dt.timedelta(minutes=5)
         async_fire_time_changed(hass, mock_now.return_value)
         await hass.async_block_till_done()
 
@@ -85,9 +85,9 @@ async def test_turned_on_and_off(mock_now: Mock, hass: HomeAssistant) -> None:
 @patch("homeassistant.util.dt.now")
 async def test_ignores_foreign_entities(mock_now: Mock, hass: HomeAssistant) -> None:
     """Test the trigger doesn't fire for an entity not owned by this integration."""
-    mock_now.return_value = datetime.datetime.fromisoformat(
-        "2000-01-01 23:50:00"
-    ).replace(tzinfo=TIME_ZONE)
+    mock_now.return_value = dt.datetime.fromisoformat("2000-01-01 23:50:00").replace(
+        tzinfo=TIME_ZONE
+    )
     await setup_entity(hass, [{CONF_FROM: "23:50:00", CONF_TO: "23:55:00"}])
 
     foreign_entity_id = f"{Platform.BINARY_SENSOR}.foreign"
@@ -118,7 +118,7 @@ async def test_ignores_foreign_entities(mock_now: Mock, hass: HomeAssistant) -> 
     await hass.async_block_till_done()
     assert len(calls) == 0
 
-    mock_now.return_value += datetime.timedelta(minutes=5)
+    mock_now.return_value += dt.timedelta(minutes=5)
     async_fire_time_changed(hass, mock_now.return_value)
     await hass.async_block_till_done()
     assert len(calls) == 1

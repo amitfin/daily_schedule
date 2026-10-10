@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import logging
 import re
 from typing import TYPE_CHECKING, Any
@@ -141,9 +141,9 @@ async def test_new_sensor(hass: HomeAssistant, schedule: list[dict[str, Any]]) -
 @patch("homeassistant.util.dt.now")
 async def test_state(mock_now: Mock, hass: HomeAssistant) -> None:
     """Test state attribute."""
-    mock_now.return_value = datetime.datetime.fromisoformat(
-        "2000-01-01 23:50:00"
-    ).replace(tzinfo=TIME_ZONE)
+    mock_now.return_value = dt.datetime.fromisoformat("2000-01-01 23:50:00").replace(
+        tzinfo=TIME_ZONE
+    )
 
     entity_id = f"{Platform.BINARY_SENSOR}.my_test"
     await setup_entity(
@@ -161,7 +161,7 @@ async def test_state(mock_now: Mock, hass: HomeAssistant) -> None:
 
     state = STATE_OFF
     for _ in range(3):
-        mock_now.return_value += datetime.timedelta(minutes=5)
+        mock_now.return_value += dt.timedelta(minutes=5)
         async_fire_time_changed(hass, mock_now.return_value)
         await hass.async_block_till_done()
         state_obj = hass.states.get(entity_id)
@@ -216,14 +216,14 @@ async def test_next_update(
     async_track_point_in_time: AsyncMock, mock_now: Mock, hass: HomeAssistant
 ) -> None:
     """Test next update time."""
-    mock_now.return_value = datetime.datetime.fromisoformat("2000-01-01").replace(
+    mock_now.return_value = dt.datetime.fromisoformat("2000-01-01").replace(
         tzinfo=TIME_ZONE
     )
 
-    in_5_minutes = mock_now.return_value + datetime.timedelta(minutes=5)
-    in_10_minutes = mock_now.return_value + datetime.timedelta(minutes=10)
-    previous_5_minutes = mock_now.return_value + datetime.timedelta(minutes=-5)
-    previous_10_minutes = mock_now.return_value + datetime.timedelta(minutes=-10)
+    in_5_minutes = mock_now.return_value + dt.timedelta(minutes=5)
+    in_10_minutes = mock_now.return_value + dt.timedelta(minutes=10)
+    previous_5_minutes = mock_now.return_value + dt.timedelta(minutes=-5)
+    previous_10_minutes = mock_now.return_value + dt.timedelta(minutes=-10)
 
     # No schedule => no updates.
     assert async_track_point_in_time.call_count == 0
@@ -249,9 +249,9 @@ async def test_next_update(
     assert state.attributes[ATTR_NEXT_TOGGLE] == in_5_minutes
     assert state.attributes[ATTR_NEXT_TOGGLES] == [
         in_5_minutes,
-        previous_5_minutes + datetime.timedelta(days=1),
-        in_5_minutes + datetime.timedelta(days=1),
-        previous_5_minutes + datetime.timedelta(days=2),
+        previous_5_minutes + dt.timedelta(days=1),
+        in_5_minutes + dt.timedelta(days=1),
+        previous_5_minutes + dt.timedelta(days=2),
     ]
 
     # After all ranges.
@@ -268,7 +268,7 @@ async def test_next_update(
     state = hass.states.get(f"{Platform.BINARY_SENSOR}.test2")
     assert state
     assert state.state == STATE_OFF
-    expected_next_update = previous_10_minutes + datetime.timedelta(days=1)
+    expected_next_update = previous_10_minutes + dt.timedelta(days=1)
     next_update = async_track_point_in_time.call_args[0][2]
     assert next_update == expected_next_update
     state = hass.states.get(f"{Platform.BINARY_SENSOR}.test2")
@@ -276,9 +276,9 @@ async def test_next_update(
     assert state.attributes[ATTR_NEXT_TOGGLE] == expected_next_update
     assert state.attributes[ATTR_NEXT_TOGGLES] == [
         expected_next_update,
-        previous_5_minutes + datetime.timedelta(days=1),
-        expected_next_update + datetime.timedelta(days=1),
-        previous_5_minutes + datetime.timedelta(days=2),
+        previous_5_minutes + dt.timedelta(days=1),
+        expected_next_update + dt.timedelta(days=1),
+        previous_5_minutes + dt.timedelta(days=2),
     ]
 
     # Before any range.
@@ -301,8 +301,8 @@ async def test_next_update(
     assert state.attributes[ATTR_NEXT_TOGGLES] == [
         in_5_minutes,
         in_10_minutes,
-        in_5_minutes + datetime.timedelta(days=1),
-        in_10_minutes + datetime.timedelta(days=1),
+        in_5_minutes + dt.timedelta(days=1),
+        in_10_minutes + dt.timedelta(days=1),
     ]
     await async_cleanup(hass)
 
@@ -490,7 +490,7 @@ async def test_utc(
     utc: bool,  # noqa: FBT001
 ) -> None:
     """Test utc schedule."""
-    utc_time = datetime.datetime(2023, 5, 30, 12, tzinfo=pytz.utc)  # 12pm
+    utc_time = dt.datetime(2023, 5, 30, 12, tzinfo=pytz.utc)  # 12pm
     await hass.config.async_set_time_zone("US/Pacific")
     local_time = utc_time.astimezone(pytz.timezone("US/Pacific"))  # 4am
     offset = utc_time.timestamp() - local_time.replace(tzinfo=None).timestamp()  # 8h
@@ -517,13 +517,13 @@ async def test_utc(
             local_time.timestamp() + 1
         )
         assert state.attributes[ATTR_NEXT_TOGGLES][1].timestamp() == (
-            (local_time + datetime.timedelta(days=1)).timestamp()
+            (local_time + dt.timedelta(days=1)).timestamp()
         )
         assert state.attributes[ATTR_NEXT_TOGGLES][2].timestamp() == (
-            (local_time + datetime.timedelta(days=1)).timestamp() + 1
+            (local_time + dt.timedelta(days=1)).timestamp() + 1
         )
         assert state.attributes[ATTR_NEXT_TOGGLES][3].timestamp() == (
-            (local_time + datetime.timedelta(days=2)).timestamp()
+            (local_time + dt.timedelta(days=2)).timestamp()
         )
     else:
         assert state.attributes[ATTR_NEXT_TOGGLES][0].timestamp() == (
@@ -533,10 +533,10 @@ async def test_utc(
             local_time.timestamp() + offset + 1
         )
         assert state.attributes[ATTR_NEXT_TOGGLES][2].timestamp() == (
-            (local_time + datetime.timedelta(days=1)).timestamp() + offset
+            (local_time + dt.timedelta(days=1)).timestamp() + offset
         )
         assert state.attributes[ATTR_NEXT_TOGGLES][3].timestamp() == (
-            (local_time + datetime.timedelta(days=1)).timestamp() + offset + 1
+            (local_time + dt.timedelta(days=1)).timestamp() + offset + 1
         )
     await async_cleanup(hass)
 
@@ -565,8 +565,8 @@ async def test_utc_dynamic(
     assert state.attributes[ATTR_EFFECTIVE_SCHEDULE] == [
         {CONF_FROM: "09:25:18", CONF_TO: "01:00:25"}
     ]
-    assert state.attributes[ATTR_NEXT_TOGGLE] == datetime.datetime(
-        2026, 6, 22, 1, 0, 25, tzinfo=datetime.UTC
+    assert state.attributes[ATTR_NEXT_TOGGLE] == dt.datetime(
+        2026, 6, 22, 1, 0, 25, tzinfo=dt.UTC
     )
 
     freezer.move_to("2026-06-22T01:00:25+00:00")  # 21:00:25 local.
@@ -601,11 +601,11 @@ async def test_dynamic_update(
     assert (
         state.attributes[ATTR_NEXT_TOGGLE].timestamp()
         == (
-            freezer.time_to_freeze + datetime.timedelta(hours=5, minutes=54, seconds=37)
+            freezer.time_to_freeze + dt.timedelta(hours=5, minutes=54, seconds=37)
         ).timestamp()
     )
 
-    freezer.tick(datetime.timedelta(days=1))
+    freezer.tick(dt.timedelta(days=1))
     async_fire_time_changed(hass, freezer.time_to_freeze)
     await hass.async_block_till_done()
 
@@ -620,7 +620,7 @@ async def test_dynamic_update(
     assert (
         state.attributes[ATTR_NEXT_TOGGLE].timestamp()
         == (
-            freezer.time_to_freeze + datetime.timedelta(hours=5, minutes=53, seconds=21)
+            freezer.time_to_freeze + dt.timedelta(hours=5, minutes=53, seconds=21)
         ).timestamp()
     )
 
@@ -636,28 +636,28 @@ async def test_dynamic_next_toggles(
     hass.config.longitude = 10.75
     await hass.config.async_set_time_zone("Europe/Oslo")
     tz = dt_util.get_time_zone("Europe/Oslo")
-    freezer.move_to(datetime.datetime(2026, 3, 10, 22, 0, tzinfo=tz))
+    freezer.move_to(dt.datetime(2026, 3, 10, 22, 0, tzinfo=tz))
     await setup_entity(
         hass, "My Test", [{CONF_FROM: SUNRISE_SYMBOL, CONF_TO: "12:00:00"}]
     )
 
-    def sunrise(day: datetime.date) -> datetime.datetime:
+    def sunrise(day: dt.date) -> dt.datetime:
         event = sun.get_astral_event_date(hass, SUN_EVENT_SUNRISE, day)
         assert event is not None
         return dt_util.as_local(event).replace(microsecond=0)
 
     sunrises = [
-        sunrise(datetime.date(2026, 3, 11)),
-        sunrise(datetime.date(2026, 3, 12)),
+        sunrise(dt.date(2026, 3, 11)),
+        sunrise(dt.date(2026, 3, 12)),
     ]
     assert sunrises[0] != sunrises[1].replace(day=11)  # Sun times change daily.
     state = hass.states.get(f"{Platform.BINARY_SENSOR}.my_test")
     assert state
     assert state.attributes[ATTR_NEXT_TOGGLES] == [
         sunrises[0],
-        datetime.datetime(2026, 3, 11, 12, 0, tzinfo=tz),
+        dt.datetime(2026, 3, 11, 12, 0, tzinfo=tz),
         sunrises[1],
-        datetime.datetime(2026, 3, 12, 12, 0, tzinfo=tz),
+        dt.datetime(2026, 3, 12, 12, 0, tzinfo=tz),
     ]
 
     await async_cleanup(hass)
@@ -681,7 +681,7 @@ async def test_dynamic_update_entire_day(
     ]
     assert not state.attributes[ATTR_NEXT_TOGGLE]
 
-    freezer.tick(datetime.timedelta(days=1))
+    freezer.tick(dt.timedelta(days=1))
     async_fire_time_changed(hass, freezer.time_to_freeze)
     await hass.async_block_till_done()
 
