@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 from homeassistant.const import Platform
 from homeassistant.helpers import entity_registry as er
 from homeassistant.setup import async_setup_component
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.daily_schedule.const import (
     CONF_FROM,
@@ -16,6 +15,7 @@ from custom_components.daily_schedule.const import (
     DOMAIN,
     SERVICE_SET,
 )
+from tests.common import MockConfigEntry
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant

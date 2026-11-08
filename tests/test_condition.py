@@ -8,13 +8,13 @@ from unittest.mock import Mock, patch
 
 from homeassistant.const import Platform
 from homeassistant.setup import async_setup_component
-from pytest_homeassistant_custom_component.common import (
-    async_fire_time_changed,
-    async_mock_service,
-)
 
 from custom_components.daily_schedule.condition import CONDITIONS, async_get_conditions
 from custom_components.daily_schedule.const import CONF_FROM, CONF_TO, DOMAIN
+from tests.common import (
+    async_fire_time_changed,
+    async_mock_service,
+)
 from tests.helpers import ENTITY_ID, TIME_ZONE, setup_entity
 
 if TYPE_CHECKING:

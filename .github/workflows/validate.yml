@@ -71,6 +71,8 @@ jobs:
     name: Tests (minimum HA version)
     runs-on: ubuntu-latest
     env:
+      # pytest-homeassistant exists only from Home Assistant 2026.11, so this job
+      # uses the discontinued pytest-homeassistant-custom-component.
       # Pins homeassistant==2026.7.0, the minimum in hacs.json. Update both together.
       PHCC_VERSION: "0.13.344"
     steps:

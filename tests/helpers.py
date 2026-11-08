@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING, Any
 
 import homeassistant.util.dt as dt_util
 from homeassistant.const import Platform
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.daily_schedule.const import CONF_SCHEDULE, DOMAIN
+from tests.common import MockConfigEntry
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant

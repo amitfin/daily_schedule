@@ -7,10 +7,9 @@ from types import SimpleNamespace
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, patch
 
-from pytest_homeassistant_custom_component.common import MockConfigEntry
-
 from custom_components.daily_schedule.const import DOMAIN
 from custom_components.daily_schedule.custom_card import CARD_FILE, FRONTEND_PATH
+from tests.common import MockConfigEntry
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant

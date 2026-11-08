@@ -22,14 +22,15 @@ Guidance for Claude Code sessions working on this repository.
 | `.../card/daily-schedule-card.js` | The Lovelace card (vanilla custom element, no build step) |
 | `.../diagnostics.py` | Config-entry diagnostics (returns the options) |
 | `.../services.yaml`, `triggers.yaml`, `conditions.yaml`, `icons.json`, `strings.json`, `translations/` | HA metadata; `translations/en.json` must equal `strings.json` |
-| `tests/` | pytest suite (`pytest-homeassistant-custom-component`) |
+| `tests/` | pytest suite (HA core's `pytest-homeassistant`) |
+| `tests/common.py` | Test helpers (`MockConfigEntry`, …) re-exported from the installed pytest package |
 | `js-tests/` | vitest + jsdom suite for the card |
 | `hacs.json` | HACS metadata, including the minimum HA version |
 | `.github/workflows/` | `lint.yml` (push/PR; also daily), `validate.yml` (hassfest, HACS, tests on the newest HA and on the minimum HA version; also daily), `speller.yml`, `release.yml`, auto-merge for Dependabot and Biome updates |
 
 ## Commands
 
-- Setup (the dev container runs this): `scripts/setup`. It installs the latest `pytest-homeassistant-custom-component` **with prereleases allowed**, plus `requirements.txt` (frontend, ruff, mypy, prek) and the npm dev dependencies.
+- Setup (the dev container runs this): `scripts/setup`. It installs the latest `pytest-homeassistant` **with prereleases allowed** and `pytest-cov`, plus `requirements.txt` (frontend, ruff, mypy, prek) and the npm dev dependencies.
 - Lint, exactly as CI runs it: `scripts/lint --no-fix` (`ruff format --check`, `ruff check`, `mypy --strict custom_components/daily_schedule`, `biome check`). Without `--no-fix` it formats and fixes.
 - Python tests and coverage: `pytest`. `pytest.ini` adds `--cov` with `--cov-fail-under=100`.
 - JS tests and coverage: `npm test` (vitest; thresholds are 100% for lines, branches, functions and statements).
@@ -58,8 +59,9 @@ Guidance for Claude Code sessions working on this repository.
 
 ## Testing conventions
 
+- The fixtures (`hass`, `hass_client`, `freezer`, …) and helpers (`MockConfigEntry`, …) come from HA core's `pytest-homeassistant` package (released with HA, same version numbers, 2026.11+). It replaced `pytest-homeassistant-custom-component`, discontinued after 0.13.375 (HA 2026.10.4). Test files import these helpers from `tests/common.py`. It re-exports them from `pytest_homeassistant.common`, falling back to `pytest_homeassistant_custom_component.common` only when `pytest_homeassistant` itself is missing (the minimum-version job, see "Compatibility"). Add new helpers there. `TYPE_CHECKING`-only imports (e.g. `pytest_homeassistant.typing`) need no fallback. `pytest.ini` follows the package's recommended config, including `-p no:respx` (HA must install its httpx alias before respx is imported). The `hass` fixture uses `tests/testing_config` as its config directory, where HA writes its default blueprints (git-ignored).
 - `tests/conftest.py`:
-  - enables custom integrations for every test;
+  - enables custom integrations for every test (needed only by the old package, which the minimum-version job uses);
   - sets the location to Israel (lat 32.072, lon 34.879) and the time zone to `Asia/Jerusalem`. Sun-time assertions such as `05:54:37` depend on this;
   - **fails any test that logs a WARNING or higher**. Allow expected messages with `@pytest.mark.allowed_logs(["<message prefix>", ...])`. A few prefixes are always allowed (the custom-integration warning, `zlib_ng and isal are not available`, slow-task warnings).
 - `tests/helpers.py` has `setup_entity` / `ENTITY_ID` for the trigger and condition tests; `test_binary_sensor.py` has its own `setup_entity(hass, name, schedule, utc, skip_reversed)`.
@@ -69,12 +71,12 @@ Guidance for Claude Code sessions working on this repository.
 
 ## Compatibility
 
-- **Minimum HA: `2026.7.0`** (`hacs.json`). CI runs lint and tests against the newest `pytest-homeassistant-custom-component`, which may pin an HA **beta** because `scripts/setup` passes `--prerelease allow`. The `test-minimum-ha` job in `validate.yml` also runs `pytest` on the minimum version (`PHCC_VERSION`; update it together with `hacs.json`). mypy runs only on the newest HA: on the minimum version, pytest with 100% coverage is what matters, since every line then runs there, and old type annotations don't affect users.
+- **Minimum HA: `2026.7.0`** (`hacs.json`). CI runs lint and tests against the newest `pytest-homeassistant` (requires Python 3.14.2+), which may pin an HA **beta** because `scripts/setup` passes `--prerelease allow`. The `test-minimum-ha` job in `validate.yml` also runs `pytest` on the minimum version (`PHCC_VERSION`; update it together with `hacs.json`). `pytest-homeassistant` exists only from HA 2026.11, so that job stays on the old, discontinued package until the minimum is raised to 2026.11 or later; then switch it to `pytest-homeassistant==<that version>` and drop the fallback in `tests/common.py` and the `enable_custom_integrations` wrapper. mypy runs only on the newest HA: on the minimum version, pytest with 100% coverage is what matters, since every line then runs there, and old type annotations don't affect users.
 - To test on the minimum version, make a separate venv in the scratchpad: `pytest-homeassistant-custom-component==0.13.344` (pins `homeassistant==2026.7.0`) plus `home-assistant-frontend`, then run `pytest` with that venv's interpreter, as the CI job does. Without `home-assistant-frontend`, most tests fail on the `frontend` dependency. `0.13.367` pins 2026.9.4.
 - APIs that differ between versions:
   - HA 2026.9 replaced `voluptuous` with `probatio`. HA's `__init__` aliases `voluptuous` to probatio's shim in `sys.modules`, so runtime behavior is unchanged. The real `voluptuous` package is still installed, though, and mypy type-checks against it. From 2026.10, HA annotates `data_schema` as `probatio.Schema`, so passing a `vol.Schema` is an `arg-type` error. The workaround is `# type: ignore[arg-type, unused-ignore]` on both `data_schema` arguments in `config_flow.py` (config and options forms). `unused-ignore` keeps it valid on versions where the ignore isn't needed.
   - In HA 2026.10, `homeassistant.components.binary_sensor.DOMAIN` moved to `binary_sensor/const.py` and is no longer an explicit export, so `mypy --strict` flags it. The code uses `Platform.BINARY_SENSOR` from `homeassistant.const` instead, which works on every version.
-  - `StaticPathConfig` needs `# type: ignore[attr-defined]` on 2026.9+. On 2026.7 mypy would report that ignore as unused, which doesn't matter, since mypy only runs on the newest HA.
+  - `StaticPathConfig` needs `# type: ignore[attr-defined]` on 2026.9 and 2026.10, but not on 2026.11+, hence `unused-ignore` too.
   - The entity trigger/condition base classes (`EntityTargetStateTriggerBase`, `EntityStateConditionBase`, `DomainSpec`) exist from the minimum version on. Check their constructor and `entity_filter` contracts on both versions when touching them.
 - Prefer small, commented workarounds that still work on the minimum version over raising it.
 
