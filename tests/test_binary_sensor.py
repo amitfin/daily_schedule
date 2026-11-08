@@ -20,10 +20,6 @@ from homeassistant.const import (
     Platform,
 )
 from homeassistant.helpers import sun
-from pytest_homeassistant_custom_component.common import (
-    MockConfigEntry,
-    async_fire_time_changed,
-)
 
 from custom_components.daily_schedule.const import (
     ATTR_EFFECTIVE_SCHEDULE,
@@ -38,6 +34,10 @@ from custom_components.daily_schedule.const import (
     SERVICE_SET,
     SUNRISE_SYMBOL,
     SUNSET_SYMBOL,
+)
+from tests.common import (
+    MockConfigEntry,
+    async_fire_time_changed,
 )
 from tests.helpers import TIME_ZONE
 
