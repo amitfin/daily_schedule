@@ -16,9 +16,74 @@
                 "title": "Upraviť snímač denného plánu",
                 "description": "Upravte konfiguráciu denného plánu.",
                 "data": {
-                    "utc": "Čas UTC namiesto miestneho času (ak si nie ste istý, nepoužívajte ho)"
+                    "utc": "Čas UTC namiesto miestneho času (ak si nie ste istý, nepoužívajte ho)",
+                    "skip_reversed": "Vynechajte časové úseky so východom alebo západom slnka, v ktorých je čas 'do' skorší alebo rovný času 'od' (nepoužívajte, ak si nie ste istí)"
                 }
             }
+        }
+    },
+    "conditions": {
+        "is_off": {
+            "description": "Overuje, či je denný rozvrh momentálne vypnutý.",
+            "fields": {
+                "behavior": {
+                    "name": "Podmienka je splnená, ak"
+                },
+                "for": {
+                    "name": "Najmenej na"
+                }
+            },
+            "name": "Denný rozvrh je vypnutý"
+        },
+        "is_on": {
+            "description": "Overuje, či je momentálne aktívny denný rozvrh.",
+            "fields": {
+                "behavior": {
+                    "name": "Podmienka je splnená, ak"
+                },
+                "for": {
+                    "name": "Najmenej na"
+                }
+            },
+            "name": "Denný rozvrh je zapnutý"
+        }
+    },
+    "services": {
+        "set": {
+            "description": "Nastavte rozvrh.",
+            "fields": {
+                "schedule": {
+                    "description": "Zoznam časových rozsahov stavu ZAPNUTÉ.",
+                    "name": "Rozvrh"
+                }
+            },
+            "name": "Nastaviť"
+        }
+    },
+    "triggers": {
+        "turned_off": {
+            "description": "Spustí sa, keď sa vypne denný rozvrh.",
+            "fields": {
+                "behavior": {
+                    "name": "Spustiť, keď"
+                },
+                "for": {
+                    "name": "Najmenej na"
+                }
+            },
+            "name": "Denný rozvrh vypnutý"
+        },
+        "turned_on": {
+            "description": "Spustí sa, keď sa aktivuje denný rozvrh.",
+            "fields": {
+                "behavior": {
+                    "name": "Trigger, keď"
+                },
+                "for": {
+                    "name": "Najmenej na"
+                }
+            },
+            "name": "Denný rozvrh zapnutý"
         }
     }
 }
