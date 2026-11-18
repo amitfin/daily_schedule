@@ -4,7 +4,7 @@ Guidance for Claude Code sessions working on this repository.
 
 ## What the integration is
 
-`daily_schedule` is a Home Assistant custom integration (HACS, helper-type, `iot_class: calculated`). Each config entry creates one `binary_sensor` that is `on` inside a user-defined list of daily time ranges. A range's `from`/`to` is an absolute time (`HH:MM:SS`), or sunrise `↑` / sunset `↓` with an optional minute offset (`↑-20`, `↓+30`). The integration also ships:
+`daily_schedule` is a Home Assistant custom integration (Marketplace, helper-type, `iot_class: calculated`). Each config entry creates one `binary_sensor` that is `on` inside a user-defined list of daily time ranges. A range's `from`/`to` is an absolute time (`HH:MM:SS`), or sunrise `↑` / sunset `↓` with an optional minute offset (`↑-20`, `↓+30`). The integration also ships:
 - a Lovelace card, served by the integration itself, for viewing and editing schedules,
 - a `daily_schedule.set` entity action,
 - new-style triggers (`turned_on` / `turned_off`) and conditions (`is_on` / `is_off`).
@@ -25,7 +25,7 @@ Guidance for Claude Code sessions working on this repository.
 | `tests/` | pytest suite (HA core's `pytest-homeassistant`) |
 | `tests/common.py` | Test helpers (`MockConfigEntry`, …) re-exported from the installed pytest package |
 | `js-tests/` | vitest + jsdom suite for the card |
-| `hacs.json` | HACS metadata, including the minimum HA version |
+| `hacs.json` | Marketplace metadata, including the minimum HA version |
 | `.github/workflows/` | `lint.yml` (push/PR; also daily), `validate.yml` (hassfest, HACS, tests on the newest HA and on the minimum HA version; also daily), `speller.yml`, `release.yml`, auto-merge for Dependabot and Biome updates |
 
 ## Commands
@@ -97,7 +97,7 @@ Guidance for Claude Code sessions working on this repository.
 - Line endings are LF everywhere (`.gitattributes`). Add formatting-only commits (whitespace, line endings) to `.git-blame-ignore-revs`; GitHub's blame skips them automatically, and locally it needs `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
 - `translations/sk.json` is community-maintained and incomplete; English is the fallback.
 - Spell-checking runs on everything except non-English translations and a few config files. Add project words to `.cspell.json`.
-- Releases: publish a GitHub release with tag `vX.Y.Z`. `release.yml` stamps the version into `manifest.json` and attaches `daily_schedule.zip` (`hacs.json` has `zip_release: true`).
+- Releases: publish a GitHub release with tag `vX.Y.Z`. `release.yml` stamps the version into `manifest.json` and attaches `daily_schedule.zip`, which the Marketplace installs (`hacs.json` has `zip_release: true`).
 - Commits go directly on `main` (the maintainer doesn't use branches): `git commit --no-verify` with explicit paths, one commit per item, a short title, and a body that explains why. Ask before pushing.
 
 ## Working with the maintainer's live Home Assistant

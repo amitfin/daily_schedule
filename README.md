@@ -1,6 +1,6 @@
 # Daily Schedule
 
-[![HACS Badge](https://img.shields.io/badge/HACS-Default-31A9F4.svg?style=for-the-badge)](https://github.com/hacs/integration)
+[![Marketplace Badge](https://img.shields.io/badge/Marketplace-Default-31A9F4.svg?style=for-the-badge)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=amitfin&repository=daily_schedule&category=integration)
 
 [![GitHub Release](https://img.shields.io/github/release/amitfin/daily_schedule.svg?style=for-the-badge&color=blue)](https://github.com/amitfin/daily_schedule/releases) ![Analytics](https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=blue&label=Analytics&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.daily_schedule.total)
 
@@ -30,13 +30,9 @@ _Note: The built-in [Schedule integration](https://www.home-assistant.io/integra
 
 ## Install
 
-[HACS](https://hacs.xyz/) is the preferred and easier way to install the component. When HACS is installed, the integration can be installed using this My button:
+Install the integration from the **Marketplace** (**Settings** > **Marketplace**) by using this My button:
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=amitfin&repository=daily_schedule&category=integration)
-
-Otherwise, download `daily_schedule.zip` from the [latest release](https://github.com/amitfin/daily_schedule/releases), extract and copy the content into `custom_components/daily_schedule` directory.
-
-📌 **Home Assistant core restart** is required once the integration files are copied (either by HACS or manually).
+[![Open your Home Assistant instance and open a repository in the Marketplace.](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=amitfin&repository=daily_schedule&category=integration)
 
 ## Create Daily Schedule
 
@@ -264,9 +260,8 @@ With the UTC option, `from` and `to` are compared in UTC. For example, in wester
 1. **Delete the configuration:**
    - Open the integration page ([my-link](https://my.home-assistant.io/redirect/integration/?domain=daily_schedule)). Delete all helper entities by clicking the 3‑dot menu (⋮), and selecting **Delete**.
 
-2. **Remove the integration files:**
-   - If the integration was installed via **HACS**, follow the [official HACS removal instructions](https://www.hacs.xyz/docs/use/repositories/dashboard/#removing-a-repository).
-   - Otherwise, manually delete the integration’s folder `custom_components/daily_schedule`.
+2. **Uninstall the integration:**
+   - Open **Settings** > **Marketplace**, select the **Installed** tab, and uninstall it.
 
 📌 A **Home Assistant core restart** is required to fully apply the removal.
 
